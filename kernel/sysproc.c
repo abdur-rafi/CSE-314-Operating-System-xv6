@@ -89,3 +89,23 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_trace(void)
+{
+  int n;
+  argint(0, &n);
+  if( n < 1 || n > 22) return -1;
+  struct proc *p = myproc();
+  p->traceCall = n;
+  return 0;
+}
+
+uint64
+sys_sysinfo(void)
+{
+
+  printf("\nsysinfo system call prints:\nfree-memory: %d bytes\nn_proc: %d\n\n", amountOfFreeMemory(), numberOfProcesses());
+  // printf("inside sysinfo");
+  return 0;
+}
