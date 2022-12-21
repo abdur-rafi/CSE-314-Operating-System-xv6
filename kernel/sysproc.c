@@ -95,7 +95,7 @@ sys_trace(void)
 {
   int n;
   argint(0, &n);
-  if( n < 1 || n > 22) return -1;
+  if( n < 1 || n > 23) return -1;
   struct proc *p = myproc();
   p->traceCall = n;
   return 0;

@@ -138,7 +138,7 @@ static uint64 (*syscalls[])(void) = {
 char* commands[] = {
   "", "fork", "exit", "wait", "pipe",  "read", "kill",
    "exec","fstat","chdir", "dup", "getpid", "sbrk",
-   "sleep", "uptime", "open", "write", "mknod", "unlink", "link", "mkdir", "close", "trace", 0
+   "sleep", "uptime", "open", "write", "mknod", "unlink", "link", "mkdir", "close", "trace" , "sysinfo", 0
 };
 
 void
