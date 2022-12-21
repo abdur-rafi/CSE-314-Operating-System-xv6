@@ -155,7 +155,7 @@ syscall(void)
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
     if(num == p->traceCall){
-      printf("pid: %d syscall: %s return value: %d\n",p->pid,commands[num] , p->trapframe->a0);
+      printf("pid: %d, syscall: %s, return value: %d\n",p->pid,commands[num] , p->trapframe->a0);
     }
   } else {
     printf("%d %s: unknown sys call %d\n",
