@@ -81,13 +81,15 @@ kalloc(void)
   return (void*)r;
 }
 
-int amountOfFreeMemory(){
+uint64 amountOfFreeMemory(){
   struct run *r;
+  acquire(&kmem.lock);
   r = kmem.freelist;
-  int c = 0;
+  uint64 c = 0;
   while(r){
     ++c;
     r=r->next;
   }
+  release(&kmem.lock);
   return c * 4096;
 }
