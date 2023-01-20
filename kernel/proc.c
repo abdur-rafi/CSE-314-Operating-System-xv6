@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "pstat.h"
 
 struct cpu cpus[NCPU];
 
@@ -114,6 +115,9 @@ allocproc(void)
   for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if(p->state == UNUSED) {
+      p->tickets_current = 1;
+      p->tickets_original = 1;
+      p->time_slices = 0;
       goto found;
     } else {
       release(&p->lock);
@@ -169,6 +173,10 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->tickets_current = 0;
+  p->time_slices = 0;
+  p->tickets_original = 0;
+
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -288,6 +296,15 @@ fork(void)
     return -1;
   }
 
+  int parentTickets;
+
+  acquire(&p->lock);
+  parentTickets = p->tickets_original;
+  release(&p->lock);
+  np->tickets_original = parentTickets;
+  np->tickets_current = parentTickets;
+
+  
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
@@ -434,6 +451,8 @@ wait(uint64 addr)
   }
 }
 
+
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -447,29 +466,67 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   
+
+  int totalRunnableTickets;
+  int lowerBound;
+  int currTicket;
+    
+
+ 
   c->proc = 0;
   for(;;){
-    // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
+
+    totalRunnableTickets = 0;
+    lowerBound = 0;
 
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
+        totalRunnableTickets += p->tickets_current;
+      }
+      release(&p->lock);
+    }
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+    if(!totalRunnableTickets){
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        p->tickets_current = p->tickets_original;
+        if(p->state == RUNNABLE)
+          totalRunnableTickets += p->tickets_original;
+        release(&p->lock);
+      }
+    }
+
+
+    currTicket = next_random() % totalRunnableTickets;
+
+    
+
+    for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if(p->state == RUNNABLE) {
+
+        lowerBound += p->tickets_current;
+        if(currTicket < lowerBound){
+          p->state = RUNNING;
+          c->proc = p;
+          p->time_slices += 1;
+          swtch(&c->context, &p->context);
+          p->tickets_current -= 1 ;
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+
+          c->proc = 0;
+          release(&p->lock);
+          break;
+        }
       }
       release(&p->lock);
     }
   }
 }
+
 
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores
@@ -680,4 +737,36 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int setTicket(int n){
+  struct proc *p = myproc();
+  acquire(&p->lock);
+  p->tickets_original = n;
+  p->tickets_current = n;
+  release(&p->lock);
+  return 0;
+}
+
+int getpinfo(struct pstat *s){
+  
+  struct proc *p;
+  int r;
+  int i = 0;
+  for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      s->pid[i] = p->pid;
+      if(p->state == UNUSED){
+        r = 0;
+      }
+      else
+        r = 1;
+      s->inuse[i] = r;
+      s->tickets_original[i] = p->tickets_original;
+      s->tickets_current[i] = p->tickets_current;
+      s->time_slices[i] = p->time_slices;
+      release(&p->lock);
+      ++i;
+    }
+  return 0; 
 }
