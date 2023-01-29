@@ -2,7 +2,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#define N 3
+#define N 100
 pthread_cond_t cond_locks[N];
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 int done[N];
