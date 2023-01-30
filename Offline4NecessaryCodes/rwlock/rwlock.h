@@ -9,8 +9,10 @@ using namespace std;
 
 struct read_write_lock
 {
-    sem_t binary_lock;
-    sem_t write_lock;
+    pthread_mutex_t mutex_lock;
+    pthread_mutex_t write_lock;
+    pthread_cond_t read_cv;
+    pthread_cond_t write_cv;
     int num_readers;
     int num_writers;
 };

@@ -29,7 +29,7 @@ if [ "$out" = "PASSED" ]; then
 fi
 
 echo "TESTSET: Running Testcases with writer preference"
-g++ -w test-writer-pref.cpp rwlock-writer-pref.cpp -o rwlock-writer-pref -lpthread
+g++ test-writer-pref.cpp rwlock-writer-pref.cpp -o rwlock-writer-pref -lpthread
 
 echo "CASE1: Writer Preference with 5 reader and 1 writer"
 total=$((total+1))
