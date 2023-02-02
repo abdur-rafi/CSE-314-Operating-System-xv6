@@ -1,0 +1,44 @@
+// counters: elves, reindeers
+
+
+// santa thread:
+    - Inifinite loop cholbe
+    - santa sleep e thakbe
+    - 3ta elves othoba 9ta reindeers joma hoile santa ke signal dibe
+    - jodi raindeer == 9:
+        - printf("Sleigh banacchi")
+        - shob reindeer ke santa broadcast korbe
+        - shobar jonne wait korbe
+        - printf("Reindeer shobai hitched")
+        - delay korar pore: printf("Resetting reindeer")
+        - reindeer = 0
+    - jodi elves == 3:
+        - printf("Helping elves")
+        - shob elves ke santa broadcast korbe
+
+
+// reindeer thread:
+    - Inifinite loop cholbe
+    - raindeer++ korbe
+    - jodi raindeer!=9, ghumay porbe.
+    - jodi raindeer==9, santa ke signal die ghumay porbe
+    - santa signal pele printf("Amra jacchi (hitched)")
+    - delay die print?
+
+// elf thread:
+    - Inifinite loop cholbe
+    - elf ekta kore help er jonne ashbe (elf++)
+    - jodi elf==3, santa ke signal die ghumay porbe (with elfTex)
+    - jodi elf!=3, elfTex release kore ghumabe
+    - santa signal pele printf("Amra jacchi (helped)")
+    - delay
+    - elf-- korbe
+    - elf==0 hole elfTex release kore dibe
+    - delay die bujhabo elf kaj kortese
+
+// main thread:
+    - lock init
+    - santa thread create
+    - 9 ta reindeer thread create
+    - 10 ta elf thread create
+    - jekono ekta thread join korbe
