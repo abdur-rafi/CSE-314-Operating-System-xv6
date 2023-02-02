@@ -1,2 +1,13 @@
 .vscode
 **.o
+**.out
+**.pyc
+**.pyo
+**.so
+**.swp
+**.swo
+
+# ignore all executables that have no extension
+*
+# unignore all dir
+!*/

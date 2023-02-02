@@ -2,7 +2,7 @@ correct=0
 total=0
 
 echo "TESTSET: Running Testcases with reader preference"
-g++ test-reader-pref.cpp rwlock-reader-pref.cpp -o rwlock-reader-pref -lpthread
+g++ -w test-reader-pref.cpp rwlock-reader-pref.cpp -o rwlock-reader-pref -lpthread
 
 echo "CASE1: Reader Preference with 5 reader and 1 writer"
 total=$((total+1))
