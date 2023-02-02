@@ -17,7 +17,7 @@
         - shob elves ke santa broadcast korbe
 
 
-// reindeer thread:
+// reindeer thread: 
     - Inifinite loop cholbe
     - raindeer++ korbe
     - jodi raindeer!=9, ghumay porbe.
