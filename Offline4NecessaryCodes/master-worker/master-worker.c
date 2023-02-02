@@ -131,6 +131,8 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < num_masters; i++)
         pthread_create(&master_thread[i], NULL, generate_requests_loop, (void *)&master_thread_id[i]);
+        
+    // create worker consumer threads
 
     for (i = 0; i < num_workers; i++)
         consumerThreadId[i] = i;
@@ -138,7 +140,6 @@ int main(int argc, char *argv[])
     for (i = 0; i < num_workers; i++)
         pthread_create(&consumerThread[i], NULL, consumeItems, (void *)&consumerThreadId[i]);
 
-    // create worker consumer threads
 
     // wait for all threads to complete
     for (i = 0; i < num_masters; i++)
