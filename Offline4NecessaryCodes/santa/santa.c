@@ -23,6 +23,18 @@ void codeLock(){
 void codeUnlock(){
     zem_up(&mutex);
 }
+void elfMaxLock(){
+    zem_down(&elfMax);
+}
+void elfMaxUnlock(){
+    zem_up(&elfMax);
+}
+void sleepElf(){
+    zem_down(&elfVar);
+}
+void signalElf(){
+    zem_up(&elfVar);
+}
 void prepareSleigh(){
     printf("Santa preparing sleigh for deers\n");
     sleep(1);
@@ -32,7 +44,7 @@ int allDeersArrived(){
     return deerCount == DEERS;
 }
 int groupOfElvesFull(){
-
+    return elvesCount == ELVES_GROUP;
 }
 void signalDeers(){
     for(int i = 0; i < DEERS; ++i)
@@ -47,11 +59,14 @@ void handleReindeer(){
     deerCount = 0;
 }
 
-void handleElves(){
-    helpElves();
-    for(int i = 0; i < ELVES_GROUP; ++i)
-        signalElf();
+void helpElves(){
+    printf("Santa is helping elves\n");
 }
+void getHelp(int id){
+    printf("%d elf is getting help from santa\n", id);
+}
+
+
 
 void locksInit(){
     zem_init(&mutex, 1);
@@ -63,7 +78,15 @@ void locksInit(){
 
 }
 
+void handleElves(){
+    helpElves();
+    for(int i = 0; i < ELVES_GROUP; ++i)
+        signalElf();
+}
+
+
 void *santaThreadFunc(void *args){
+    printf("Santa is sleeping\n");
     while(1){
         santaSleep();
         codeLock();
@@ -101,25 +124,14 @@ void *reindeerThreadFunc(void *data){
     }
     
 }
-void elfMaxLock(){
-    zem_down(&elfMax);
-}
-void elfMaxUnlock(){
-    zem_up(&elfMax);
-}
-void sleepElf(){
-    zem_down(&elfVar);
-}
-void signalElf(){
-    zem_up(&elfVar);
-}
+
 void* elfThreadFunc(void *data){
     int elfId = *((int *)data);
 
     while(1){
-        codeLock();
         elfMaxLock();
-        printf("%d elf has come for help\n");
+        codeLock();
+        printf("%d elf has come for help\n", elfId);
         elvesCount++;
         if(groupOfElvesFull()){
             signalSanta();
@@ -133,19 +145,13 @@ void* elfThreadFunc(void *data){
         codeLock();
         --elvesCount;
         if(elvesCount == 0){
-            printf("Elves group cleared\n")
+            printf("Elves group cleared\n");
             elfMaxUnlock();
         }
         codeUnlock();
     }
 }
 
-void helpElves(){
-    printf("Santa is helping elves\n");
-}
-void getHelp(int id){
-    printf("%d elf is getting help from santa\n");
-}
 
 
 int main(){
@@ -167,9 +173,9 @@ int main(){
         pthread_create(elfThreads + i,NULL, elfThreadFunc,id);
     }
     pthread_join(santaThread, NULL);
-    for(int i = 0; i < DEERS; ++i){
-        pthread_join(deerThreads[i], NULL);
-    }
+    // for(int i = 0; i < DEERS; ++i){
+    //     pthread_join(deerThreads[i], NULL);
+    // }
 
     
 
