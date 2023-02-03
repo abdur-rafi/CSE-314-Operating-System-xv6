@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define DEERS 9
 #define ELVES 6
@@ -41,10 +42,12 @@ void* santa(void* arg) {
             pthread_cond_broadcast(&reindeer_cv);
             deerCount = 0;
         } else if (elvesCount == ELVES_GROUP) {
-            printf("Santa is heping elves\n");
+            printf("Santa is helping elves\n");
             sleep(1);
+            pthread_mutex_unlock(&mutex);
             pthread_cond_broadcast(&elf_cv);
         }
+        pthread_mutex_unlock(&mutex);
         sleep(3);
         printf("Santa back to sleeping\n");
         pthread_mutex_unlock(&mutex);
@@ -52,7 +55,7 @@ void* santa(void* arg) {
 }
 
 void* reeinder(void* arg) {
-    int id = (int)arg;
+    int id = *(int*)arg;
     while (1) {
         pthread_mutex_lock(&mutex);
         printf("%d deer arrived\n", id);
@@ -68,7 +71,7 @@ void* reeinder(void* arg) {
 }
 
 void* elf(void* arg) {
-    int id = (int)arg;
+    int id = *(int*)arg;
     while (1) {
         pthread_mutex_lock(&elf_tex);
         pthread_mutex_lock(&mutex);
@@ -82,7 +85,7 @@ void* elf(void* arg) {
         getHelp(id);
         sleep(1);
         elvesCount--;
-        if (elvesCount == 0){
+        if (elvesCount == 0) {
             printf("Elves group cleared\n");
             pthread_mutex_unlock(&elf_tex);
         }
@@ -96,7 +99,7 @@ void* alloc_int(int i) {
     return p;
 }
 
-int main(){
+int main() {
     pthread_t santa_thread;
     pthread_t reindeer_threads[DEERS];
     pthread_t elf_threads[ELVES];
