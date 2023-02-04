@@ -4,11 +4,11 @@
 #include<unistd.h>
 #include <stdlib.h>
 
-#define DEERS 3
+#define DEERS 9
 #define ELVES 6
-#define ELVES_GROUP 2
+#define ELVES_GROUP 3
 
-struct zemaphore mutex, santaVar, reindeersVar, elfMax, elfVar, hitched, occupiedDeer;
+struct zemaphore mutex, santaVar, reindeersVar, elfMax, elfVar, hitched, occupiedDeer, gettingHelp;
 int deerCount = 0, elvesCount = 0;
 
 void santaSleep(){
@@ -86,7 +86,7 @@ void handleReindeer(){
     // reindeerFreed();
     // signalDeers();
     freeDeers();
-    codeUnlock();
+    // codeUnlock();
 }
 
 void helpElves(){
@@ -106,15 +106,27 @@ void locksInit(){
     zem_init(&elfVar, 0);
     zem_init(&hitched, 0);
     zem_init(&occupiedDeer, 0);
+    zem_init(&gettingHelp, 0);
 
 
 }
 
+void waitForHelpComplete(){
+    zem_down(&gettingHelp);
+}
+void helpComplete(){
+    zem_up(&gettingHelp);
+}
+
 void handleElves(){
     helpElves();
-    for(int i = 0; i < ELVES_GROUP; ++i)
+    for(int i = 0; i < ELVES_GROUP; ++i){
         signalElf();
-    codeUnlock();
+        codeUnlock();
+        waitForHelpComplete();
+        codeLock();
+    }
+    // codeUnlock();
 }
 
 
@@ -124,13 +136,14 @@ void *santaThreadFunc(void *args){
         santaSleep();
         codeLock();
         printf("Santa woke up\n");
+        
         if(allDeersArrived()){
             handleReindeer();
         }
         if(groupOfElvesFull()){
             handleElves();
         }
-        codeLock();
+        // codeLock();
         printf("Santa going back to sleep\n");
         codeUnlock();
         // sleep(3);
@@ -189,8 +202,9 @@ void* elfThreadFunc(void *data){
         }
         codeUnlock();
         sleepElf();
-        getHelp(elfId);
         codeLock();
+        getHelp(elfId);
+        helpComplete();
         --elvesCount;
         if(elvesCount == 0){
             printf("Elves group cleared\n");
@@ -210,16 +224,17 @@ int main(){
     pthread_t elfThreads[ELVES];
 
     pthread_create(&santaThread, NULL, santaThreadFunc, NULL);
-    for(int i = 0; i < DEERS; ++i){
-        int* id = (int *)malloc(sizeof(int));
-        *id = i + 1;
-        pthread_create(deerThreads + i,NULL, reindeerThreadFunc,id);
-    }
     for(int i = 0; i < ELVES; ++i){
         int* id = (int *)malloc(sizeof(int));
         *id = i + 1;
         pthread_create(elfThreads + i,NULL, elfThreadFunc,id);
     }
+    for(int i = 0; i < DEERS; ++i){
+        int* id = (int *)malloc(sizeof(int));
+        *id = i + 1;
+        pthread_create(deerThreads + i,NULL, reindeerThreadFunc,id);
+    }
+    
     pthread_join(santaThread, NULL);
     // for(int i = 0; i < DEERS; ++i){
     //     pthread_join(deerThreads[i], NULL);
