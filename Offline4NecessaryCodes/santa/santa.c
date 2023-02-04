@@ -38,7 +38,7 @@ void signalElf(){
 void prepareSleigh(){
     printf("Santa preparing sleigh for deers\n");
     codeUnlock();
-    // sleep(5);
+    // sleep(3);
 }
 int allDeersArrived(){
     return deerCount == DEERS;
@@ -75,6 +75,7 @@ void handleReindeer(){
     printf("Sleigh prepared.Waiting for reindeers.\n");
     signalDeers();
     codeUnlock();
+    // sleep(3);
     waitForDeersToGetHitched();
     codeLock();
     printf("All hitched. Going to give presents\n");
@@ -89,9 +90,6 @@ void handleReindeer(){
     // codeUnlock();
 }
 
-void helpElves(){
-    printf("Santa is helping elves\n");
-}
 void getHelp(int id){
     printf("%d elf got help from santa\n", id);
 }
@@ -119,8 +117,11 @@ void helpComplete(){
 }
 
 void handleElves(){
-    helpElves();
+    printf("Santa is helping elves\n");
     for(int i = 0; i < ELVES_GROUP; ++i){
+        codeUnlock();
+        // sleep(3);
+        codeLock();
         signalElf();
         codeUnlock();
         waitForHelpComplete();
@@ -211,6 +212,7 @@ void* elfThreadFunc(void *data){
             elfMaxUnlock();
         }
         codeUnlock();
+        // sleep(rand() % 5 + 1);
     }
 }
 
