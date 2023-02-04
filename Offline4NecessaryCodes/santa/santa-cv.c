@@ -14,11 +14,13 @@ pthread_mutex_t mutex;
 pthread_cond_t santa_cv;
 pthread_cond_t reindeer_cv;
 pthread_cond_t elf_cv;
+pthread_cond_t hiched;
+pthread_cond_t occupiedDeer;
+pthread_cond_t gettingHelp;
 
 void prepareSleigh() {
     printf("Santa preparing sleigh for deers\n");
-    sleep(1);
-    printf("Sleigh prepared\n");
+    //sleep(1);
 }
 
 void getHitched(int id) {
@@ -39,18 +41,27 @@ void* santa(void* arg) {
         printf("Santa woke up\n");
         if (deerCount == DEERS) {
             prepareSleigh();
+            printf("Sleigh prepared.Waiting for reindeers.\n");
             pthread_cond_broadcast(&reindeer_cv);
+            pthread_mutex_unlock(&mutex);
+            sleep(1);
+            pthread_mutex_lock(&mutex);
+            printf("All hitched. Going to give presents\n");
             deerCount = 0;
-        } else if (elvesCount == ELVES_GROUP) {
+            printf("Santa returned\n");
+            pthread_cond_broadcast(&occupiedDeer);
+            // pthread_mutex_lock(&mutex);
+        } 
+        if (elvesCount == ELVES_GROUP) {
             printf("Santa is helping elves\n");
             sleep(1);
-            pthread_mutex_unlock(&mutex);
+            // pthread_mutex_unlock(&mutex);
             pthread_cond_broadcast(&elf_cv);
         }
-        pthread_mutex_unlock(&mutex);
-        sleep(3);
+        // pthread_mutex_lock(&mutex);
         printf("Santa back to sleeping\n");
         pthread_mutex_unlock(&mutex);
+
     }
 }
 
@@ -65,8 +76,11 @@ void* reeinder(void* arg) {
         }
         pthread_cond_wait(&reindeer_cv, &mutex);
         getHitched(id);
-        sleep(1);
+
+        pthread_cond_wait(&occupiedDeer, &mutex);
+        printf("%d reindeer going back\n", id);
         pthread_mutex_unlock(&mutex);
+        //sleep(1);
     }
 }
 
@@ -82,8 +96,11 @@ void* elf(void* arg) {
         else
             pthread_mutex_unlock(&elf_tex);
         pthread_cond_wait(&elf_cv, &mutex);
+        pthread_mutex_unlock(&mutex);
+
         getHelp(id);
-        sleep(1);
+        //sleep(1);
+        pthread_mutex_lock(&mutex);
         elvesCount--;
         if (elvesCount == 0) {
             printf("Elves group cleared\n");
@@ -109,6 +126,9 @@ int main() {
     pthread_cond_init(&santa_cv, NULL);
     pthread_cond_init(&reindeer_cv, NULL);
     pthread_cond_init(&elf_cv, NULL);
+    pthread_cond_init(&hiched, NULL);
+    pthread_cond_init(&occupiedDeer, NULL);
+    pthread_cond_init(&gettingHelp, NULL);
 
     pthread_create(&santa_thread, NULL, santa, NULL);
     for (int i = 0; i < DEERS; i++) {
