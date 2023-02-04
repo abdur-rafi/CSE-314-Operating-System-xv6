@@ -4,11 +4,11 @@
 #include<unistd.h>
 #include <stdlib.h>
 
-#define DEERS 9
+#define DEERS 3
 #define ELVES 6
-#define ELVES_GROUP 3
+#define ELVES_GROUP 2
 
-struct zemaphore mutex, santaVar, reindeersVar, elfMax, elfVar;
+struct zemaphore mutex, santaVar, reindeersVar, elfMax, elfVar, hitched, occupiedDeer;
 int deerCount = 0, elvesCount = 0;
 
 void santaSleep(){
@@ -37,8 +37,8 @@ void signalElf(){
 }
 void prepareSleigh(){
     printf("Santa preparing sleigh for deers\n");
-    sleep(1);
-    printf("Sleigh prepared\n");
+    codeUnlock();
+    // sleep(5);
 }
 int allDeersArrived(){
     return deerCount == DEERS;
@@ -53,17 +53,47 @@ void signalDeers(){
 void sleepDeer(){
     zem_down(&reindeersVar);
 }
+void reindeerFreed(){
+    signalDeers();
+}
+void waitForDeersToGetHitched(){
+    for(int i = 0; i < DEERS; ++i)
+        zem_down(&hitched);
+}
+void deerGotHitched(){
+    zem_up(&hitched);
+}
+void freeDeers(){
+    for(int i = 0; i < DEERS; ++i){
+        zem_up(&occupiedDeer);
+    }
+}
+
 void handleReindeer(){
     prepareSleigh();
+    codeLock();
+    printf("Sleigh prepared.Waiting for reindeers.\n");
     signalDeers();
+    codeUnlock();
+    waitForDeersToGetHitched();
+    codeLock();
+    printf("All hitched. Going to give presents\n");
+    codeUnlock();
+    // sleep(5);
+    codeLock();
     deerCount = 0;
+    printf("Santa returned\n");
+    // reindeerFreed();
+    // signalDeers();
+    freeDeers();
+    codeUnlock();
 }
 
 void helpElves(){
     printf("Santa is helping elves\n");
 }
 void getHelp(int id){
-    printf("%d elf is getting help from santa\n", id);
+    printf("%d elf got help from santa\n", id);
 }
 
 
@@ -74,6 +104,8 @@ void locksInit(){
     zem_init(&reindeersVar, 0);
     zem_init(&elfMax, 1);
     zem_init(&elfVar, 0);
+    zem_init(&hitched, 0);
+    zem_init(&occupiedDeer, 0);
 
 
 }
@@ -82,6 +114,7 @@ void handleElves(){
     helpElves();
     for(int i = 0; i < ELVES_GROUP; ++i)
         signalElf();
+    codeUnlock();
 }
 
 
@@ -97,14 +130,20 @@ void *santaThreadFunc(void *args){
         if(groupOfElvesFull()){
             handleElves();
         }
-        sleep(3);
-        printf("Santa back to sleeping\n");
+        codeLock();
+        printf("Santa going back to sleep\n");
         codeUnlock();
+        // sleep(3);
     }
 }
 
 void getHitched(int id){
     printf("%d deer getting hitched\n", id);
+    deerGotHitched();
+}
+
+void reindeerOccupied(){
+    zem_down(&occupiedDeer);
 }
 
 void *reindeerThreadFunc(void *data){
@@ -119,8 +158,17 @@ void *reindeerThreadFunc(void *data){
         }
         codeUnlock();
         sleepDeer();
+        codeLock();
         getHitched(deerId);
-        sleep(rand() % 5 + 1);
+        codeUnlock();
+
+        // sleep(3);
+        reindeerOccupied();
+        codeLock();
+        printf("%d reindeer going back\n", deerId);
+        codeUnlock();
+        // sleep(3);
+
     }
     
 }
