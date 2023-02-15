@@ -5,5 +5,10 @@
 int main(){
 
     // printf("hello world");
+    int a = 5;
+    fork();
+    int b = 6;
+    a = 8;
+    printf("%d %d\n", a, b);
     return 0;
 }
