@@ -9,15 +9,14 @@ int main(){
     int b = 3;
 
     if(fork()){
-        // a = 1;
-        // b = 2;
+        a = 1;
+        b = 2;
     }
     else{
-        // a = 3;?
-        // b = 4;
+        a = 3;
+        b = 4;
     }
     printf("%d %d\n", a, b);
     printf("done\n");
-    wait(0);
     return 0;
 }

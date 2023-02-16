@@ -11,6 +11,8 @@
  */
 pagetable_t kernel_pagetable;
 
+extern char refCount[];
+
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
@@ -317,14 +319,13 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     
     // take out write permission
-    uint64 f2 = 0;
-    if(*pte & PTE_W)
-      f2 = PTE_COW;
-    
+    // uint64 f2 = 0;
+    // if(*pte & PTE_W)
+    //   f2 = PTE_COW;
     *pte = (*pte) & (~(PTE_W));
     pa = PTE2PA(*pte);
     
-    flags = PTE_FLAGS(*pte) | f2;
+    flags = PTE_FLAGS(*pte) | PTE_COW;
     // if((mem = kalloc()) == 0)
     //   goto err;
     // memmove(mem, (char*)pa, PGSIZE);
@@ -332,6 +333,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       // kfree(mem);
       goto err;
     }
+    refCount[PTE2PPN(*pte)]++;
     // uvmunmap(old,i,1,0);
     // mappages(old,i,PGSIZE,pa,flags);
   }
@@ -449,12 +451,16 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 }
 
 
-void assignPagesOnWrite(pagetable_t p){
+
+int assignPagesOnWrite(pagetable_t p){
   // printf("by write error\n");
   uint64 va = PGROUNDDOWN(r_stval());
   pte_t *pte = walk(p,va,0);
   // error handling
   uint64 flags = PTE_FLAGS(*pte);
+  // printf("cow flag: %d\n",PTE_COW & flags);
+  // if(!(flags & PTE_COW))
+  //   return 0;
   char *mem = kalloc();
   // error handling
   uint64 pa = PTE2PA(*pte);
@@ -464,4 +470,5 @@ void assignPagesOnWrite(pagetable_t p){
   *pte |= flags;
   *pte |= PTE_W | PTE_COW;
   // printf("done\n");
+  return 1;
 }

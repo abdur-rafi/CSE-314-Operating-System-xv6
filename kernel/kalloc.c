@@ -9,6 +9,21 @@
 #include "riscv.h"
 #include "defs.h"
 
+char refCount[1 << 20] = {0};
+
+void kfree2(void *pa);
+
+void incRefCount(int ppn){
+  refCount[ppn]++;
+}
+void decRefCount(int ppn){
+  refCount[ppn]--;
+  if(refCount[ppn] == 0){
+    uint64 pa2 = PPN2PA(ppn);
+    kfree2((void*)pa2);
+  }
+}
+
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
@@ -35,16 +50,31 @@ freerange(void *pa_start, void *pa_end)
 {
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
-    kfree(p);
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
+    int ppn = PA2PPN((uint64)p);
+    incRefCount(ppn);
+    kfree2(p);
+  }
 }
 
 // Free the page of physical memory pointed at by pa,
 // which normally should have been returned by a
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
+
+void kfree(void *pa){
+  int ppn = PA2PPN((uint64)pa);
+  if(refCount[ppn] <= 0){
+    panic("kfree2");
+  }
+  decRefCount(ppn);
+  // printf("ppn count: %d\n",(uint64)pa);
+  // kfree2(pa);
+
+}
+
 void
-kfree(void *pa)
+kfree2(void *pa)
 {
   struct run *r;
 
@@ -76,7 +106,11 @@ kalloc(void)
     kmem.freelist = r->next;
   release(&kmem.lock);
 
-  if(r)
+  if(r){
     memset((char*)r, 5, PGSIZE); // fill with junk
+    int ppn = PA2PPN((uint64)r);
+    // printf("kalloc ppn: %d\n", ppn);
+    incRefCount(ppn);
+  }
   return (void*)r;
 }
