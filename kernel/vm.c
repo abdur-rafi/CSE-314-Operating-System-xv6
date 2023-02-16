@@ -308,7 +308,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   pte_t *pte;
   uint64 pa, i;
   uint flags;
-  char *mem;
+  // char *mem;
 
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
@@ -317,17 +317,23 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     
     // take out write permission
+    uint64 f2 = 0;
+    if(*pte & PTE_W)
+      f2 = PTE_COW;
+    
     *pte = (*pte) & (~(PTE_W));
     pa = PTE2PA(*pte);
     
-    flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
+    flags = PTE_FLAGS(*pte) | f2;
+    // if((mem = kalloc()) == 0)
+    //   goto err;
+    // memmove(mem, (char*)pa, PGSIZE);
+    if(mappages(new, i, PGSIZE, (uint64)pa, flags) != 0){
+      // kfree(mem);
       goto err;
     }
+    // uvmunmap(old,i,1,0);
+    // mappages(old,i,PGSIZE,pa,flags);
   }
   return 0;
 
@@ -440,4 +446,22 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+
+void assignPagesOnWrite(pagetable_t p){
+  // printf("by write error\n");
+  uint64 va = PGROUNDDOWN(r_stval());
+  pte_t *pte = walk(p,va,0);
+  // error handling
+  uint64 flags = PTE_FLAGS(*pte);
+  char *mem = kalloc();
+  // error handling
+  uint64 pa = PTE2PA(*pte);
+  memmove(mem, (char*)pa, PGSIZE);
+  // mappages(p->pagetable,va,PGSIZE,(uint64)mem,flags | (PTE_W));
+  *pte = PA2PTE(mem);
+  *pte |= flags;
+  *pte |= PTE_W | PTE_COW;
+  // printf("done\n");
 }

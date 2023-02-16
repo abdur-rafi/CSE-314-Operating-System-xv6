@@ -6,9 +6,18 @@ int main(){
 
     // printf("hello world");
     int a = 5;
-    fork();
-    int b = 6;
-    a = 8;
+    int b = 3;
+
+    if(fork()){
+        // a = 1;
+        // b = 2;
+    }
+    else{
+        // a = 3;?
+        // b = 4;
+    }
     printf("%d %d\n", a, b);
+    printf("done\n");
+    wait(0);
     return 0;
 }

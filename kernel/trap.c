@@ -69,18 +69,7 @@ usertrap(void)
     // ok
   } else {
     if(r_scause() == 0x0f){
-      // printf("by write error\n");
-      uint64 va = PGROUNDDOWN(r_stval());
-      pte_t *pte = walk(p->pagetable,va,0);
-      // error handling
-      uint64 flags = PTE_FLAGS(*pte);
-      char *mem = kalloc();
-      // error handling
-      uint64 pa = PTE2PA(*pte);
-      memmove(mem, (char*)pa, PGSIZE);
-      *pte = PA2PTE(mem);
-      *pte |= flags;
-      *pte |= PTE_W;
+      assignPagesOnWrite(p->pagetable);
     }
     else{
 
@@ -88,7 +77,7 @@ usertrap(void)
       printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
       setkilled(p);
     }
-    }
+  }
 
   if(killed(p))
     exit(-1);
@@ -96,7 +85,7 @@ usertrap(void)
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
     yield();
-
+  
   usertrapret();
 }
 
