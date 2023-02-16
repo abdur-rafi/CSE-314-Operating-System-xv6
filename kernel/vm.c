@@ -11,7 +11,7 @@
  */
 pagetable_t kernel_pagetable;
 
-extern char refCount[];
+// extern char refCount[];
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
@@ -333,7 +333,8 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       // kfree(mem);
       goto err;
     }
-    refCount[PTE2PPN(*pte)]++;
+    incRefCount(PTE2PPN(*pte));
+    // refCount[PTE2PPN(*pte)]++;
     // uvmunmap(old,i,1,0);
     // mappages(old,i,PGSIZE,pa,flags);
   }
@@ -461,10 +462,12 @@ int assignPagesOnWrite(pagetable_t p){
   // printf("cow flag: %d\n",PTE_COW & flags);
   // if(!(flags & PTE_COW))
   //   return 0;
+  decRefCount(PTE2PPN(*pte));
   char *mem = kalloc();
   // error handling
   uint64 pa = PTE2PA(*pte);
   memmove(mem, (char*)pa, PGSIZE);
+  incRefCount(PA2PPN((uint64)mem));
   // mappages(p->pagetable,va,PGSIZE,(uint64)mem,flags | (PTE_W));
   *pte = PA2PTE(mem);
   *pte |= flags;
