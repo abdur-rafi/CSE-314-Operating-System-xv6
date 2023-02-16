@@ -13,12 +13,14 @@ char refCount[1 << 20] = {0};
 
 void kfree2(void *pa);
 
-void incRefCount(int ppn){
+void incRefCount(uint64 ppn){
   refCount[ppn]++;
 }
-void decRefCount(int ppn){
+void decRefCount(uint64 ppn){
+  // printf("refcount: %d\n", refCount[ppn]);
   refCount[ppn]--;
   if(refCount[ppn] == 0){
+    // printf("freeing stuff\n");
     uint64 pa2 = PPN2PA(ppn);
     kfree2((void*)pa2);
   }
@@ -51,8 +53,9 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
-    int ppn = PA2PPN((uint64)p);
-    incRefCount(ppn);
+    uint64 ppn = PA2PPN((uint64)p);
+    // incRefCount(ppn);
+    refCount[ppn] = 0;
     kfree2(p);
   }
 }
@@ -63,7 +66,7 @@ freerange(void *pa_start, void *pa_end)
 // initializing the allocator; see kinit above.)
 
 void kfree(void *pa){
-  int ppn = PA2PPN((uint64)pa);
+  uint64 ppn = PA2PPN((uint64)pa);
   if(refCount[ppn] <= 0){
     panic("kfree2");
   }
@@ -76,6 +79,7 @@ void kfree(void *pa){
 void
 kfree2(void *pa)
 {
+  // printf("freeing stuff\n");
   struct run *r;
 
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
@@ -108,7 +112,7 @@ kalloc(void)
 
   if(r){
     memset((char*)r, 5, PGSIZE); // fill with junk
-    int ppn = PA2PPN((uint64)r);
+    uint64 ppn = PA2PPN((uint64)r);
     // printf("kalloc ppn: %d\n", ppn);
     incRefCount(ppn);
   }

@@ -21,7 +21,7 @@ int main(){
         a = 3;
         b = 4;
         printf("from child.c = %d\n",*c);
-
+        free(c);
     }
     printf("%d %d\n", a, b);
     return 0;
