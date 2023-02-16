@@ -89,3 +89,7 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+void sys_pagestats(void){
+  printf("free pages: %d\n",pagestats());
+}

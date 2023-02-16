@@ -66,6 +66,7 @@ void            kinit(void);
 void            incRefCount(uint64 ppn);
 void            decRefCount(uint64 ppn);
 int             getRefCount(uint64 ppn);
+int             pagestats();
 
 // log.c
 void            initlog(int, struct superblock*);

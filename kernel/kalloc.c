@@ -124,3 +124,16 @@ kalloc(void)
   }
   return (void*)r;
 }
+
+int pagestats(){
+  int c = 0;
+  struct run *curr;
+  acquire(&kmem.lock);
+  curr = kmem.freelist;
+  while(curr){
+    ++c;
+    curr = curr->next;
+  }
+  release(&kmem.lock);
+  return c;
+}

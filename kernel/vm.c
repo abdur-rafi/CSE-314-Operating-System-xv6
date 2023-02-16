@@ -462,7 +462,6 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
 
 int assignPagesOnWrite(pagetable_t p){
-  // printf("by write error\n");
   uint64 va = PGROUNDDOWN(r_stval());
   pte_t *pte = walk(p,va,0);
   if(pte == 0) return 0;
