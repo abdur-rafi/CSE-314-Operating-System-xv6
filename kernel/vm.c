@@ -309,8 +309,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 {
   pte_t *pte;
   uint64 pa, i;
-  uint flags;
-  // char *mem;
+  uint64 flags;
 
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
@@ -318,25 +317,19 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     if((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
     
-    // take out write permission
-    // uint64 f2 = 0;
-    // if(*pte & PTE_W)
-    //   f2 = PTE_COW;
-    *pte = (*pte) & (~(PTE_W));
     pa = PTE2PA(*pte);
-    
-    flags = PTE_FLAGS(*pte) | PTE_COW;
-    // if((mem = kalloc()) == 0)
-    //   goto err;
-    // memmove(mem, (char*)pa, PGSIZE);
+    flags = PTE_FLAGS(*pte);
+    if(flags & PTE_W){
+      flags = flags | PTE_COW;
+      flags &= (~PTE_W);
+    }
+    *pte = PA2PTE(pa) | flags;
     if(mappages(new, i, PGSIZE, (uint64)pa, flags) != 0){
       // kfree(mem);
       goto err;
     }
-    incRefCount(PTE2PPN(*pte));
-    // refCount[PTE2PPN(*pte)]++;
-    // uvmunmap(old,i,1,0);
-    // mappages(old,i,PGSIZE,pa,flags);
+    uint64 ppn = PTE2PPN(*pte);
+    incRefCount(ppn);
   }
   return 0;
 
@@ -365,7 +358,7 @@ int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
   uint64 n, va0, pa0;
-
+  pte_t *pte;
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
     pa0 = walkaddr(pagetable, va0);
@@ -374,6 +367,17 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     n = PGSIZE - (dstva - va0);
     if(n > len)
       n = len;
+
+    pte = walk(pagetable, va0,0);
+    uint64 flags = PTE_FLAGS(*pte);
+    if((flags & PTE_COW)){
+      uint64 flags = PTE_FLAGS(*pte);
+      flags |= (PTE_W);
+      flags &= (~PTE_COW);
+      decRefCount(PTE2PPN(*pte));
+      pa0 = (uint64) kalloc();
+      *pte = PA2PTE(pa0) | flags;
+    }
     memmove((void *)(pa0 + (dstva - va0)), src, n);
 
     len -= n;
@@ -461,21 +465,20 @@ int assignPagesOnWrite(pagetable_t p){
   // printf("by write error\n");
   uint64 va = PGROUNDDOWN(r_stval());
   pte_t *pte = walk(p,va,0);
-  // error handling
+  if(pte == 0) return 0;
   uint64 flags = PTE_FLAGS(*pte);
-  // printf("cow flag: %d\n",PTE_COW & flags);
-  // if(!(flags & PTE_COW))
-  //   return 0;
-  decRefCount(PTE2PPN(*pte));
+  if(!(flags & (PTE_COW))){
+    return 0;
+  }
   char *mem = kalloc();
-  // error handling
+  if(mem == 0){
+    return 0;
+  }
   uint64 pa = PTE2PA(*pte);
   memmove(mem, (char*)pa, PGSIZE);
-  incRefCount(PA2PPN((uint64)mem));
-  // mappages(p->pagetable,va,PGSIZE,(uint64)mem,flags | (PTE_W));
-  *pte = PA2PTE(mem);
-  *pte |= flags;
-  *pte |= PTE_W | PTE_COW;
-  // printf("done\n");
+  decRefCount(PTE2PPN(*pte));
+  flags |= PTE_W;
+  flags &= ~PTE_COW;
+  *pte = PA2PTE(mem) | flags;
   return 1;
 }

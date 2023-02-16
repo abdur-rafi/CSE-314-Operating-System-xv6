@@ -71,8 +71,12 @@ usertrap(void)
     int handled = 0;
     if(r_scause() == 0x0f){
       handled = assignPagesOnWrite(p->pagetable);
+      if(!handled){
+        printf("usertrap(): cow failed\n");
+        setkilled(p);
+      }
     }
-    if(!handled){
+    else{
       printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
       printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
       setkilled(p);

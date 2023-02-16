@@ -9,7 +9,7 @@
 #include "riscv.h"
 #include "defs.h"
 
-char refCount[1 << 20] = {0};
+char refCount[1 << 21] = {0};
 
 void kfree2(void *pa);
 
@@ -20,10 +20,17 @@ void decRefCount(uint64 ppn){
   // printf("refcount: %d\n", refCount[ppn]);
   refCount[ppn]--;
   if(refCount[ppn] == 0){
-    // printf("freeing stuff\n");
+    // printf("freeing page %d\n",ppn);
     uint64 pa2 = PPN2PA(ppn);
     kfree2((void*)pa2);
   }
+  else if(refCount[ppn] < 0){
+    printf("error\n");
+  }
+}
+
+int getRefCount(uint64 ppn){
+  return refCount[ppn];
 }
 
 void freerange(void *pa_start, void *pa_end);
@@ -54,9 +61,8 @@ freerange(void *pa_start, void *pa_end)
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
     uint64 ppn = PA2PPN((uint64)p);
-    // incRefCount(ppn);
     refCount[ppn] = 0;
-    kfree2(p);
+    kfree2((void*)(PPN2PA(ppn)));
   }
 }
 
@@ -113,7 +119,7 @@ kalloc(void)
   if(r){
     memset((char*)r, 5, PGSIZE); // fill with junk
     uint64 ppn = PA2PPN((uint64)r);
-    // printf("kalloc ppn: %d\n", ppn);
+    // printf("allocating page: %d\n", ppn);
     incRefCount(ppn);
   }
   return (void*)r;

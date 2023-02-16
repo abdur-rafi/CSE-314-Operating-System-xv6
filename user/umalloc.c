@@ -65,12 +65,15 @@ malloc(uint nbytes)
 {
   Header *p, *prevp;
   uint nunits;
+    // printf("HERE\n");
 
   nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
   if((prevp = freep) == 0){
     base.s.ptr = freep = prevp = &base;
     base.s.size = 0;
   }
+    // printf("HERE\n");
+
   for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
     if(p->s.size >= nunits){
       if(p->s.size == nunits)
@@ -83,6 +86,8 @@ malloc(uint nbytes)
       freep = prevp;
       return (void*)(p + 1);
     }
+    // printf("HERE\n");
+
     if(p == freep)
       if((p = morecore(nunits)) == 0)
         return 0;
