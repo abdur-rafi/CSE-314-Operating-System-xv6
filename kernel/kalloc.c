@@ -8,19 +8,19 @@
 #include "spinlock.h"
 #include "riscv.h"
 #include "defs.h"
+#define PAGE_COUNT 32 * 1024
 
-char refCount[1 << 21] = {0};
+char refCount[PAGE_COUNT];
 
 void kfree2(void *pa);
 
 void incRefCount(uint64 ppn){
+
   refCount[ppn]++;
 }
 void decRefCount(uint64 ppn){
-  // printf("refcount: %d\n", refCount[ppn]);
   refCount[ppn]--;
   if(refCount[ppn] == 0){
-    // printf("freeing page %d\n",ppn);
     uint64 pa2 = PPN2PA(ppn);
     kfree2((void*)pa2);
   }
@@ -57,12 +57,16 @@ kinit()
 void
 freerange(void *pa_start, void *pa_end)
 {
+  for(int i = 0; i < PAGE_COUNT; ++i)
+    refCount[i] = -1;
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
     uint64 ppn = PA2PPN((uint64)p);
+    // printf("%d %d %d\n", ppn, p,PPN2PA(ppn));
     refCount[ppn] = 0;
     kfree2((void*)(PPN2PA(ppn)));
+  
   }
 }
 
@@ -121,6 +125,7 @@ kalloc(void)
     uint64 ppn = PA2PPN((uint64)r);
     // printf("allocating page: %d\n", ppn);
     incRefCount(ppn);
+    // printf("%d\n", refCount[ppn]);
   }
   return (void*)r;
 }
@@ -137,3 +142,14 @@ int pagestats(){
   release(&kmem.lock);
   return c;
 }
+int pagestatsFromRefCount(){
+  int c = 0;
+  for(int i = 0; i < (PAGE_COUNT); ++i){
+    if(refCount[i] == 0) ++c;
+  }
+  return c;
+}
+
+// int getPPN(uint64 addr){
+//   return addr - KERNBASE;
+// }

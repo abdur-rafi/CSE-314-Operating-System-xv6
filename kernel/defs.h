@@ -67,7 +67,7 @@ void            incRefCount(uint64 ppn);
 void            decRefCount(uint64 ppn);
 int             getRefCount(uint64 ppn);
 int             pagestats();
-
+int             pagestatsFromRefCount();
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
