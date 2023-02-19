@@ -9,7 +9,7 @@
 #include "riscv.h"
 #include "defs.h"
 #define PAGE_COUNT 32 * 1024
-#define MAX_LIVE_PAGE 50
+#define MAX_LIVE_PAGE 30
 #define QUEUE_SIZE MAX_LIVE_PAGE * NPROC
 
 #define IN_QUEUE 1
@@ -48,9 +48,10 @@ struct Queue{
 
 void evictPage(int ppn){
   if(ppn < 0 || ppn >= PAGE_COUNT)
-    panic("evict page");
+    panic("evict_ page");
  
   if(getPageStatus(ppn) != IN_QUEUE){
+    printf("%d %d\n", q.entryCount,q.uniqueCount);
     panic("evict page");
   }
   swapped[ppn] = swapalloc();
@@ -69,7 +70,7 @@ void evictPage(int ppn){
 
 void removeFromQueue(int ppn, int markInvalid){
   if(getPageStatus(ppn) != IN_QUEUE)
-    return ;
+    panic("not in queue");
   int j = 0;
   for(int i = 0; i < q.entryCount; ++i){
     int index = (q.f + i) % QUEUE_SIZE;
@@ -100,12 +101,6 @@ int getFront(){
   return ppn;
 }
 
-// void freePage(int ppn){
-//   if(getPageStatus(ppn) == IN_QUEUE){
-//     removeFromQueue(ppn, 0);
-//     setPageStatus(ppn, FREE);
-//   }
-// }
 
 void enqueue(pte_t *pte){
   int ppn = PTE2PPN(*pte);
@@ -150,7 +145,7 @@ void removePTE(pte_t *pte){
       q.arr[(index - 1 + QUEUE_SIZE) % QUEUE_SIZE] = q.arr[index];
     }
   }
-  // --q.entryCount;
+  --q.entryCount;
 }
 
 int getLiveCount(){
@@ -178,7 +173,7 @@ void decRefCount(uint64 ppn){
     int pgStatus = getPageStatus(ppn);
     if( pgStatus == IN_QUEUE){
       kfree2((void*)pa2);
-      removeFromQueue(ppn, 0);
+      removeFromQueue(ppn, 1);
       setPageStatus(ppn, FREE);
     }
     else if(pgStatus == SWAPPED){
@@ -187,6 +182,7 @@ void decRefCount(uint64 ppn){
       if(swapped[ppn] == 0){  
         panic("dec ref");
       }
+      setPageStatus(ppn, FREE);
       // char *mem = (char *) kalloc();
       // swapin(mem, swapped[ppn]);
       // int p = getFront();
