@@ -201,6 +201,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
     if(do_free){
+      removePTE(pte);
       uint64 pa = PTE2PA(*pte);
       // printf("kfree en\n");
       kfree((void*)pa);
@@ -341,6 +342,7 @@ uvmfree(pagetable_t pagetable, uint64 sz)
   if(sz > 0){
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
   }
+  // printf("asdf");
   freewalk(pagetable);
   printf("uvmfree Exit\n");
 
