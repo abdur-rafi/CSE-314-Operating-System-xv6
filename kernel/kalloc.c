@@ -12,7 +12,7 @@
 #define MAX_LIVE_PAGE 50
 #define QUEUE_SIZE MAX_LIVE_PAGE * NPROC
 
-#define LIVE 1
+#define IN_QUEUE 1
 #define SWAPPED 2
 #define FREE 3
 
@@ -31,27 +31,50 @@ void swapPage(){
 }
 
 struct Queue{
-  pte_t* arr[QUEUE_SIZE], temp[QUEUE_SIZE];
+  pte_t* arr[QUEUE_SIZE], *temp[QUEUE_SIZE];
   int f;
-  int liveCount;
+  int uniqueCount;
   int entryCount;
 } q;
 
+void removeFromQueue(int ppn){
+  int j = 0;
+  for(int i = 0; i < q.entryCount; ++i){
+    int index = (q.f + i) % QUEUE_SIZE;
+    if(PTE2PPN(*q.arr[index]) != ppn){
+      q.temp[j++] = q.arr[index];
+    }
+  }
+  q.f = 0;
+  q.entryCount = j;
+  for(int i = 0; i < j; ++i)
+    q.arr[i] = q.temp[i];
+  if(getPageStatus(ppn) == IN_QUEUE){
+    --q.uniqueCount;
+  }
+}
+
+void freePage(int ppn){
+  removeFromQueue(ppn);
+  if(getPageStatus(ppn) == IN_QUEUE){
+    setPageStatus(ppn, FREE);
+  }
+}
 
 void enqueue(pte_t *pte){
   int ppn = PTE2PPN(*pte);
-  if(q.liveCount == MAX_LIVE_PAGE){
+  if(q.uniqueCount == MAX_LIVE_PAGE){
     swapPage();
   }
-  q.entryCount++;
   int index = (q.f + q.entryCount) % QUEUE_SIZE;
+  q.entryCount++;
   q.arr[index] = pte;
   int status = getPageStatus(ppn);
   if(status == FREE){
-    setPageStatus(ppn, LIVE);
-    q.liveCount++;
+    setPageStatus(ppn, IN_QUEUE);
+    q.uniqueCount++;
   }
-  else if(status == LIVE){
+  else if(status == IN_QUEUE){
   }
   else if(status == SWAPPED){
     *pte = (*pte) & (~PTE_V);
@@ -64,7 +87,8 @@ void enqueue(pte_t *pte){
 }
 
 int getLiveCount(){
-  return q.liveCount;
+  // printf("entry count : %d\n", q.entryCount);
+  return q.uniqueCount;
 }
 
 void kfree2(void *pa);
@@ -78,10 +102,11 @@ void decRefCount(uint64 ppn){
   if(refCount[ppn] == 0){
     uint64 pa2 = PPN2PA(ppn);
     kfree2((void*)pa2);
-    if(getPageStatus(ppn) == LIVE){
-      --q.liveCount;
-    }
-    setPageStatus(ppn, FREE);
+    freePage(ppn);
+    // if(getPageStatus(ppn) == IN_QUEUE){
+    //   --q.uniqueCount;
+    // }
+    // setPageStatus(ppn, FREE);
   }
   else if(refCount[ppn] < 0){
     printf("error\n");
