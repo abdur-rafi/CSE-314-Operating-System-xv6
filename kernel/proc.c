@@ -691,7 +691,6 @@ void pageCountOfProcs(){
     if(p->state != UNUSED){
       printf("%d %d %d %d\n", p->pid, pageCount(p->pagetable, 0), p->sz / PGSIZE, p->sz % PGSIZE);
       // Wake process from sleep().
-      p->state = RUNNABLE;
     }
     release(&p->lock);
   }

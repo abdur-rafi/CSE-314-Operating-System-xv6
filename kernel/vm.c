@@ -178,7 +178,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
 void
 uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 {
-  printf("uvmunmap Entry\n");
+  // printf("uvmunmap Entry\n");
 
   uint64 a;
   pte_t *pte;
@@ -187,12 +187,12 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
-      printf("walk En\n");
+      // printf("walk En\n");
 
     if((pte = walk(pagetable, a, 0,0)) == 0){
       panic("uvmunmap: walk");
     }
-      printf("walk Ex\n");
+      // printf("walk Ex\n");
     
     if(((*pte & PTE_V) || (*pte & PTE_SWAPPED)) == 0){
       // printf("%d\n", (*pte) & PTE_SWAPPED);
@@ -207,7 +207,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     }
     *pte = 0;
   }
-  printf("uvmunmap exit\n");
+  // printf("uvmunmap exit\n");
 
 }
 
