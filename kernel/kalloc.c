@@ -9,8 +9,63 @@
 #include "riscv.h"
 #include "defs.h"
 #define PAGE_COUNT 32 * 1024
+#define MAX_LIVE_PAGE 50
+#define QUEUE_SIZE MAX_LIVE_PAGE * NPROC
+
+#define LIVE 1
+#define SWAPPED 2
+#define FREE 3
 
 char refCount[PAGE_COUNT];
+char pageStatus[PAGE_COUNT];
+struct swap* swapped[PAGE_COUNT];
+
+int getPageStatus(int ppn){
+  return pageStatus[ppn];
+}
+void setPageStatus(int ppn, int status){
+  pageStatus[ppn] = status;
+}
+void swapPage(){
+  // pte_t* pte = q.arr[q.f];
+}
+
+struct Queue{
+  pte_t* arr[QUEUE_SIZE], temp[QUEUE_SIZE];
+  int f;
+  int liveCount;
+  int entryCount;
+} q;
+
+
+void enqueue(pte_t *pte){
+  int ppn = PTE2PPN(*pte);
+  if(q.liveCount == MAX_LIVE_PAGE){
+    swapPage();
+  }
+  q.entryCount++;
+  int index = (q.f + q.entryCount) % QUEUE_SIZE;
+  q.arr[index] = pte;
+  int status = getPageStatus(ppn);
+  if(status == FREE){
+    setPageStatus(ppn, LIVE);
+    q.liveCount++;
+  }
+  else if(status == LIVE){
+  }
+  else if(status == SWAPPED){
+    *pte = (*pte) & (~PTE_V);
+    q.entryCount--;
+  }
+  else{
+    // printf("%d issue\n", ppn);
+  }
+  // printf("%d %d\n", q.entryCount, q.liveCount);
+}
+
+int getLiveCount(){
+  return q.liveCount;
+}
 
 void kfree2(void *pa);
 
@@ -23,6 +78,10 @@ void decRefCount(uint64 ppn){
   if(refCount[ppn] == 0){
     uint64 pa2 = PPN2PA(ppn);
     kfree2((void*)pa2);
+    if(getPageStatus(ppn) == LIVE){
+      --q.liveCount;
+    }
+    setPageStatus(ppn, FREE);
   }
   else if(refCount[ppn] < 0){
     printf("error\n");
@@ -31,6 +90,11 @@ void decRefCount(uint64 ppn){
 
 int getRefCount(uint64 ppn){
   return refCount[ppn];
+}
+
+void initRefCount(){
+  for(int i = 0; i < PAGE_COUNT; ++i)
+      refCount[i] = -1;
 }
 
 void freerange(void *pa_start, void *pa_end);
@@ -51,22 +115,21 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  initRefCount();
   freerange(end, (void*)PHYSTOP);
 }
 
 void
 freerange(void *pa_start, void *pa_end)
 {
-  for(int i = 0; i < PAGE_COUNT; ++i)
-    refCount[i] = -1;
+  
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
     uint64 ppn = PA2PPN((uint64)p);
-    // printf("%d %d %d\n", ppn, p,PPN2PA(ppn));
     refCount[ppn] = 0;
+    pageStatus[ppn] = FREE;
     kfree2((void*)(PPN2PA(ppn)));
-  
   }
 }
 
@@ -81,7 +144,6 @@ void kfree(void *pa){
     panic("kfree2");
   }
   decRefCount(ppn);
-  // printf("ppn count: %d\n",(uint64)pa);
   // kfree2(pa);
 
 }

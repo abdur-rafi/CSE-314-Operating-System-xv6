@@ -8,6 +8,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct swap;
 
 // bio.c
 void            binit(void);
@@ -36,6 +37,8 @@ int             filewrite(struct file*, uint64, int n);
 
 // fs.c
 void            fsinit(int);
+uint            balloc(uint dev);
+void            bfree(int dev, uint b);
 int             dirlink(struct inode*, char*, uint);
 struct inode*   dirlookup(struct inode*, char*, uint*);
 struct inode*   ialloc(uint, short);
@@ -68,6 +71,8 @@ void            decRefCount(uint64 ppn);
 int             getRefCount(uint64 ppn);
 int             pagestats();
 int             pagestatsFromRefCount();
+void            enqueue(pte_t* pte);
+int             getLiveCount();
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
@@ -110,6 +115,14 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+void             pageCountOfProcs();
+
+// swap.c
+void            swapinit(void);
+void            swapfree(struct swap*);
+struct swap*    swapalloc(void);
+void            swapout(struct swap *dst_sp, char *src_pa);
+void            swapin(char *dst_pa, struct swap *src_sp);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -163,7 +176,7 @@ int             uartgetc(void);
 void            kvminit(void);
 void            kvminithart(void);
 void            kvmmap(pagetable_t, uint64, uint64, uint64, int);
-int             mappages(pagetable_t, uint64, uint64, uint64, int);
+int             mappages(pagetable_t, uint64, uint64, uint64, int,int);
 pagetable_t     uvmcreate(void);
 void            uvmfirst(pagetable_t, uchar *, uint);
 uint64          uvmalloc(pagetable_t, uint64, uint64, int);
@@ -172,12 +185,13 @@ int             uvmcopy(pagetable_t, pagetable_t, uint64);
 void            uvmfree(pagetable_t, uint64);
 void            uvmunmap(pagetable_t, uint64, uint64, int);
 void            uvmclear(pagetable_t, uint64);
-pte_t *         walk(pagetable_t, uint64, int);
+pte_t *         walk(pagetable_t, uint64, int,int);
 uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 int            assignPagesOnWrite(pagetable_t p);
+int             pageCount(pagetable_t, int);
 // plic.c
 void            plicinit(void);
 void            plicinithart(void);

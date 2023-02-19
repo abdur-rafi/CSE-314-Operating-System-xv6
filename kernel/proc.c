@@ -188,7 +188,7 @@ proc_pagetable(struct proc *p)
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
   if(mappages(pagetable, TRAMPOLINE, PGSIZE,
-              (uint64)trampoline, PTE_R | PTE_X) < 0){
+              (uint64)trampoline, PTE_R | PTE_X, 0) < 0){
     uvmfree(pagetable, 0);
     return 0;
   }
@@ -196,7 +196,7 @@ proc_pagetable(struct proc *p)
   // map the trapframe page just below the trampoline page, for
   // trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
-              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+              (uint64)(p->trapframe), PTE_R | PTE_W, 0) < 0){
     uvmunmap(pagetable, TRAMPOLINE, 1, 0);
     uvmfree(pagetable, 0);
     return 0;
@@ -279,6 +279,7 @@ growproc(int n)
 int
 fork(void)
 {
+  // printf("fork\n");
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
@@ -679,5 +680,19 @@ procdump(void)
       state = "???";
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
+  }
+}
+
+void pageCountOfProcs(){
+  struct proc *p;
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state != UNUSED){
+      printf("%d %d %d %d\n", p->pid, pageCount(p->pagetable, 0), p->sz / PGSIZE, p->sz % PGSIZE);
+      // Wake process from sleep().
+      p->state = RUNNABLE;
+    }
+    release(&p->lock);
   }
 }
