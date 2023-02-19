@@ -216,7 +216,6 @@ void
 virtio_disk_rw(struct buf *b, int write)
 {
   uint64 sector = b->blockno * (BSIZE / 512);
-
   acquire(&disk.vdisk_lock);
 
   // the spec's Section 5.2 says that legacy block operations use

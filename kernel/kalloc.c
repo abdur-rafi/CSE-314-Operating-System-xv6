@@ -55,6 +55,7 @@ void evictPage(int ppn){
     panic("swapp");
   }
   // printf("%d\n", sizeof(char *));
+  printf("s%d\n", ppn);
   swapout(swapped[ppn],(char *) PPN2PA(ppn));
   // printf("evicted\n");
   removeFromQueue(ppn, 0);
@@ -152,8 +153,10 @@ void decRefCount(uint64 ppn){
       setPageStatus(ppn, FREE);
     }
     else if(pgStatus == SWAPPED){
-      printf("asdf");
-      swapfree(swapped[ppn]);
+      // printf("asdf");
+      printf("s2%d\n", ppn);
+      if(swapped[ppn] != 0)
+        swapfree(swapped[ppn]);
     }
     else{
       kfree2((void*)pa2);

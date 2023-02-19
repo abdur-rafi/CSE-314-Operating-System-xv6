@@ -126,6 +126,7 @@ recover_from_log(void)
 void
 begin_op(void)
 {
+
   acquire(&log.lock);
   while(1){
     if(log.committing){
@@ -139,6 +140,7 @@ begin_op(void)
       break;
     }
   }
+  
 }
 
 // called at the end of each FS system call.
