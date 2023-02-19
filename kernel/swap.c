@@ -110,6 +110,7 @@ swapout(struct swap *dst_sp, char *src_pa)
       panic("swapout");
     bp = bread(ROOTDEV, *blockno);
     memmove(bp->data, src_pa, BSIZE);
+    // printf("here");
     log_write(bp);
     brelse(bp);
   }

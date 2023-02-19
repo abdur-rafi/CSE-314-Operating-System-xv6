@@ -99,8 +99,8 @@ walk(pagetable_t pagetable, uint64 va, int alloc,int enq)
         return 0;
       memset(pagetable, 0, PGSIZE);
       *pte = PA2PTE(pagetable) | PTE_V;
-      if(enq)
-        enqueue(pte);
+      // if(enq)
+      //   enqueue(pte);
       
     }
   }
@@ -187,8 +187,10 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
   for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
     if((pte = walk(pagetable, a, 0,0)) == 0)
       panic("uvmunmap: walk");
-    if((*pte & PTE_V) == 0)
+    if(((*pte & PTE_V) || (*pte & PTE_SWAPPED)) == 0){
+      // printf("%d\n", (*pte) & PTE_SWAPPED);
       panic("uvmunmap: not mapped");
+    }
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
     if(do_free){
@@ -285,8 +287,8 @@ int pageCount(pagetable_t pagetable, int level){
       else{
         uint64 child = PTE2PA(pte);
         c += pageCount((pagetable_t)child, level + 1);
-        if(level > 0)
-          ++c;
+        // if(level > 0)
+        //   ++c;
       }
     }
     // if((pte & PTE_V) && (pte & (PTE_R|PTE_W|PTE_X)) == 0){
@@ -325,9 +327,14 @@ freewalk(pagetable_t pagetable)
 void
 uvmfree(pagetable_t pagetable, uint64 sz)
 {
-  if(sz > 0)
+  printf("uvmfree Entry\n");
+  if(sz > 0){
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
+
+  }
   freewalk(pagetable);
+  printf("uvmfree Exit\n");
+
 }
 
 // Given a parent process's page table, copy

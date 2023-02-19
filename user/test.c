@@ -8,16 +8,17 @@ int main(){
     // int a = 5;
     // int b = 3;
     pagestats();
-    // sbrk(10000 * 4096 );
-    if(fork() != 0){
-        wait(0);
-        pagestats();
-    }
-    else{
-        int a = 5;
-        printf("a:%d\n", a);
-        pagestats();
-    }
+    sbrk(38 * 4096 );
+    pagestats();
+    // if(fork() != 0){
+    //     wait(0);
+    //     pagestats();
+    // }
+    // else{
+    //     int a = 5;
+    //     printf("a:%d\n", a);
+    //     pagestats();
+    // }
 
     // fork();
     // int a = 5;

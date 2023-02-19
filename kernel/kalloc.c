@@ -37,26 +37,58 @@ struct Queue{
   int entryCount;
 } q;
 
-void removeFromQueue(int ppn){
+void removeFromQueue(int, int);
+
+void evictPage(int ppn){
+  if(getPageStatus(ppn) != IN_QUEUE){
+    panic("evict page");
+  }
+  swapped[ppn] = swapalloc();
+  if(swapped[ppn] == 0){
+    panic("swapp");
+  }
+  // printf("%d\n", sizeof(char *));
+  swapout(swapped[ppn],(char *) PPN2PA(ppn));
+  // printf("evicted\n");
+  removeFromQueue(ppn, 1);
+  setPageStatus(ppn, SWAPPED);
+  // kfree2(PPN2PA(ppn));
+  printf("evicted\n");
+}
+
+void removeFromQueue(int ppn, int markInvalid){
+  if(getPageStatus(ppn) != IN_QUEUE)
+    return ;
   int j = 0;
   for(int i = 0; i < q.entryCount; ++i){
     int index = (q.f + i) % QUEUE_SIZE;
-    if(PTE2PPN(*q.arr[index]) != ppn){
-      q.temp[j++] = q.arr[index];
+    pte_t *pte = q.arr[index];
+    if(PTE2PPN(*pte) != ppn){
+      q.temp[j++] = pte;
+    }
+    else if(markInvalid){
+      *pte = ((*pte) & (~PTE_V)) | (PTE_SWAPPED);
     }
   }
   q.f = 0;
   q.entryCount = j;
   for(int i = 0; i < j; ++i)
     q.arr[i] = q.temp[i];
-  if(getPageStatus(ppn) == IN_QUEUE){
-    --q.uniqueCount;
+  --q.uniqueCount;
+}
+
+int dequeue(){
+  if(q.uniqueCount <= 0){
+    panic("dequeue");
   }
+  int i = q.f;
+  q.f = (q.f + 1) % QUEUE_SIZE;
+  return PTE2PPN(*q.arr[i]);
 }
 
 void freePage(int ppn){
-  removeFromQueue(ppn);
   if(getPageStatus(ppn) == IN_QUEUE){
+    removeFromQueue(ppn, 0);
     setPageStatus(ppn, FREE);
   }
 }
@@ -64,7 +96,7 @@ void freePage(int ppn){
 void enqueue(pte_t *pte){
   int ppn = PTE2PPN(*pte);
   if(q.uniqueCount == MAX_LIVE_PAGE){
-    swapPage();
+    evictPage(dequeue());
   }
   int index = (q.f + q.entryCount) % QUEUE_SIZE;
   q.entryCount++;
@@ -77,8 +109,8 @@ void enqueue(pte_t *pte){
   else if(status == IN_QUEUE){
   }
   else if(status == SWAPPED){
-    *pte = (*pte) & (~PTE_V);
-    q.entryCount--;
+    // *pte = (*pte) & (~PTE_V);
+    // q.entryCount--;
   }
   else{
     // printf("%d issue\n", ppn);
