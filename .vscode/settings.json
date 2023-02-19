@@ -3,6 +3,8 @@
         "spinlock.h": "c",
         "user.h": "c",
         "syscall.h": "c",
-        "proc.h": "c"
+        "proc.h": "c",
+        "exception": "c",
+        "new": "c"
     }
 }

@@ -337,12 +337,12 @@ freewalk(pagetable_t pagetable)
 void
 uvmfree(pagetable_t pagetable, uint64 sz)
 {
-  printf("uvmfree Entry\n");
+  // printf("uvmfree Entry\n");
   if(sz > 0){
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
   }
   freewalk(pagetable);
-  printf("uvmfree Exit\n");
+  // printf("uvmfree Exit\n");
 
 }
 

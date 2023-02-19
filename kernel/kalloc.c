@@ -8,7 +8,6 @@
 #include "spinlock.h"
 #include "riscv.h"
 #include "defs.h"
-#define PAGE_COUNT 32 * 1024
 #define MAX_LIVE_PAGE 50
 #define QUEUE_SIZE MAX_LIVE_PAGE * NPROC
 
@@ -57,7 +56,7 @@ void evictPage(int ppn){
   // printf("%d\n", sizeof(char *));
   swapout(swapped[ppn],(char *) PPN2PA(ppn));
   // printf("evicted\n");
-  removeFromQueue(ppn, 0);
+  // removeFromQueue(ppn, 0);
   setPageStatus(ppn, SWAPPED);
   kfree2((void*) PPN2PA(ppn));
   printf("evicted\n");
@@ -148,7 +147,7 @@ void decRefCount(uint64 ppn){
     int pgStatus = getPageStatus(ppn);
     if( pgStatus == IN_QUEUE){
       kfree2((void*)pa2);
-      removeFromQueue(ppn, 0);
+      // removeFromQueue(ppn, 0);
       setPageStatus(ppn, FREE);
       // freePage(ppn);
     }

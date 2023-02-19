@@ -3003,19 +3003,20 @@ countfree()
 
   if(pid == 0){
     close(fds[0]);
-    
+    int c = 0;
     while(1){
       uint64 a = (uint64) sbrk(4096);
       if(a == 0xffffffffffffffff){
         break;
       }
-
+      ++c;
       // modify the memory to make sure it's really allocated.
       *(char *)(a + 4096 - 1) = 1;
 
       // report back one more page.
       if(write(fds[1], "x", 1) != 1){
         printf("write() failed in countfree()\n");
+        printf("%d\n", c);
         exit(1);
       }
     }
