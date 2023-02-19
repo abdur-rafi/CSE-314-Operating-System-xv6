@@ -20,6 +20,10 @@ char refCount[PAGE_COUNT];
 char pageStatus[PAGE_COUNT];
 struct swap* swapped[PAGE_COUNT];
 
+void kfree2(void *pa);
+void removeFromQueue(int, int);
+
+
 int getPageStatus(int ppn){
   return pageStatus[ppn];
 }
@@ -37,7 +41,6 @@ struct Queue{
   int entryCount;
 } q;
 
-void removeFromQueue(int, int);
 
 void evictPage(int ppn){
   if(getPageStatus(ppn) != IN_QUEUE){
@@ -50,9 +53,9 @@ void evictPage(int ppn){
   // printf("%d\n", sizeof(char *));
   swapout(swapped[ppn],(char *) PPN2PA(ppn));
   // printf("evicted\n");
-  removeFromQueue(ppn, 1);
+  removeFromQueue(ppn, 0);
   setPageStatus(ppn, SWAPPED);
-  // kfree2(PPN2PA(ppn));
+  kfree2((void*) PPN2PA(ppn));
   printf("evicted\n");
 }
 
@@ -86,35 +89,37 @@ int dequeue(){
   return PTE2PPN(*q.arr[i]);
 }
 
-void freePage(int ppn){
-  if(getPageStatus(ppn) == IN_QUEUE){
-    removeFromQueue(ppn, 0);
-    setPageStatus(ppn, FREE);
-  }
-}
+// void freePage(int ppn){
+//   if(getPageStatus(ppn) == IN_QUEUE){
+//     removeFromQueue(ppn, 0);
+//     setPageStatus(ppn, FREE);
+//   }
+// }
 
 void enqueue(pte_t *pte){
   int ppn = PTE2PPN(*pte);
-  if(q.uniqueCount == MAX_LIVE_PAGE){
-    evictPage(dequeue());
-  }
-  int index = (q.f + q.entryCount) % QUEUE_SIZE;
-  q.entryCount++;
-  q.arr[index] = pte;
   int status = getPageStatus(ppn);
   if(status == FREE){
     setPageStatus(ppn, IN_QUEUE);
     q.uniqueCount++;
   }
   else if(status == IN_QUEUE){
+
   }
   else if(status == SWAPPED){
-    // *pte = (*pte) & (~PTE_V);
-    // q.entryCount--;
+    *pte = (*pte) & (~PTE_V);
+    return;
   }
   else{
     // printf("%d issue\n", ppn);
   }
+  if(q.uniqueCount == MAX_LIVE_PAGE + 1){
+    evictPage(dequeue());
+  }
+  int index = (q.f + q.entryCount) % QUEUE_SIZE;
+  q.entryCount++;
+  q.arr[index] = pte;
+  
   // printf("%d %d\n", q.entryCount, q.liveCount);
 }
 
@@ -123,7 +128,6 @@ int getLiveCount(){
   return q.uniqueCount;
 }
 
-void kfree2(void *pa);
 
 void incRefCount(uint64 ppn){
 
@@ -133,15 +137,19 @@ void decRefCount(uint64 ppn){
   refCount[ppn]--;
   if(refCount[ppn] == 0){
     uint64 pa2 = PPN2PA(ppn);
-    kfree2((void*)pa2);
-    freePage(ppn);
-    // if(getPageStatus(ppn) == IN_QUEUE){
-    //   --q.uniqueCount;
-    // }
-    // setPageStatus(ppn, FREE);
-  }
-  else if(refCount[ppn] < 0){
-    printf("error\n");
+    if(getPageStatus(ppn) == IN_QUEUE){
+      kfree2((void*)pa2);
+      removeFromQueue(ppn, 0);
+      setPageStatus(ppn, FREE);
+      // freePage(ppn);
+    }
+    else if(getPageStatus(ppn) == SWAPPED){
+      printf("asdf");
+      swapfree(swapped[ppn]);
+    }
+    else{
+      kfree2((void*)pa2);
+    }
   }
 }
 

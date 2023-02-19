@@ -83,10 +83,10 @@ swapfree(struct swap *s)
     if(*blockno)
       bfree(ROOTDEV, *blockno);
   }
+
   end_op();
 
   r = (struct run*)s;
-
   acquire(&swapmem.lock);
   r->next = swapmem.freelist;
   swapmem.freelist = r;
