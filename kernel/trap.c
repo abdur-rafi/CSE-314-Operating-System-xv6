@@ -70,7 +70,7 @@ usertrap(void)
   } else {
     int handled = 0;
     if(r_scause() == 0x0f){
-      handled = assignPagesOnWrite(p->pagetable);
+      handled = assignPagesOnWrite(p->pagetable, p->pid);
       if(!handled){
         printf("usertrap(): cow failed\n");
         setkilled(p);
