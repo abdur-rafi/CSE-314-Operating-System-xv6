@@ -443,7 +443,7 @@ int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
   uint64 n, va0, pa0;
-  // pte_t pte;
+
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);
     pa0 = walkaddr(pagetable, va0);
@@ -452,10 +452,6 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
     n = PGSIZE - (srcva - va0);
     if(n > len)
       n = len;
-    // decRefCount(PA2PPN(pa0));
-    // pa0 = kalloc();
-    // pte = walk(pagetable, va0, 0);
-    // *pte = PA2PTE(pa0);
     memmove(dst, (void *)(pa0 + (srcva - va0)), n);
 
     len -= n;

@@ -91,6 +91,7 @@ sys_write(void)
   if(argfd(0, 0, &f) < 0)
     return -1;
 
+  printf("%d\n",p);
   return filewrite(f, p, n);
 }
 
