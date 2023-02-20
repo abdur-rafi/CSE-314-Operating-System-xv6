@@ -9,7 +9,7 @@ int main(){
     // int b = 3;
     // pagestats();
     printf("===============================\n");
-    sbrk(10 * 4096 );
+    sbrk(37 * 4096 );
     pagestats();
     if(fork() == 0){
         if(fork() != 0){

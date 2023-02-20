@@ -33,6 +33,7 @@ struct swappedListNode{
   int vpn;
   int refCount;
   struct swap* sp;
+  struct swappedListNode* next;
 };
 
 
@@ -171,10 +172,12 @@ void swappedListInit(){
   swapped.list = 0;
 }
 // with liveList lock held
+//  issue
 void swap(struct liveListNode* n){
-  if(!holding(&live.lock)){
-    panic("liveList lock not held");
-  }
+  // if(!holding(&live.lock)){
+  //   panic("liveList lock not held");
+  // }
+  printf("in swap\n");
   if(n == 0){
     panic("null pointer to swap");
   }
@@ -186,13 +189,23 @@ void swap(struct liveListNode* n){
   if(s == 0){
     panic("swap not allocated");
   }
-  swapout(s,(char*) PPN2PA(*n->pte));
+
+  swapout(s,(char*) PTE2PA(*n->pte));
   int refCount = 0;
   
   sn->procId = n->procId;
   sn->refCount = refCount;
   sn->sp = s;
-  
+  sn->next = 0;
+  // issue
+  acquire(&swapped.lock);
+  if(swapped.list == 0)
+    swapped.list = sn;
+  else{
+    sn->next = swapped.list;
+    swapped.list = sn;
+  }
+  release(&swapped.lock);
 }
 
 void addLive(pte_t *pte, int procId, int vpn){
@@ -219,9 +232,15 @@ void addLive(pte_t *pte, int procId, int vpn){
   }
   // issue
   if(live.liveCount >= MAX_LIVE_PAGE){
-    
+    struct liveListNode* t = live.list;
+    while(t->next){
+      t = t->next;
+    }
+    release(&live.lock);
+    swap(t);
   }
-  release(&live.lock);
+  else
+    release(&live.lock);
 }
 
 void removeLive(uint64* pte){
