@@ -7,7 +7,7 @@ int main(){
     // printf("hello world");
     // int a = 5;
     // int b = 3;
-    pagestats();
+    // pagestats();
     sbrk(38 * 4096 );
     pagestats();
     // if(fork() != 0){
