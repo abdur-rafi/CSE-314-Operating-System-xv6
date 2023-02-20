@@ -154,13 +154,14 @@ void removeLive(uint64* pte){
     if(!f){
       panic("pte not found");
     }
-    int ppn = PTE2PPN(*pte);
-    live.count[ppn] -= 1;
-    if(live.count[ppn] == 0)
-      --live.liveCount;
-    else if(live.count[ppn] < 0)
-      panic("live count < 0");
+    
   }
+  int ppn = PTE2PPN(*pte);
+  live.count[ppn] -= 1;
+  if(live.count[ppn] == 0)
+    --live.liveCount;
+  else if(live.count[ppn] < 0)
+    panic("live count < 0");
   release(&live.lock);
 }
 
@@ -174,10 +175,17 @@ struct {
 
 int getLiveCount(){
   int c = 0;
+  struct node* n;
   acquire(&live.lock);
-  c = live.liveCount;  
+   n = live.list;
+  while(n != 0){
+    n = n->next;
+    ++c;
+  }
+  int d = live.liveCount;  
   release(&live.lock);  
-  return c;
+  printf("live list size: %d unique count: %d\n", c, live.liveCount);
+  return d;
 }
 
 

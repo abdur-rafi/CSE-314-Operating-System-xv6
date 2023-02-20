@@ -8,15 +8,30 @@ int main(){
     int a = 5;
     // int b = 3;
     // pagestats();
+    printf("===============================\n");
     sbrk(10 * 4096 );
     pagestats();
     if(fork() == 0){
-        a = 3;
-        printf("a:%d\n", a);
-        pagestats();
+        if(fork() != 0){
+
+            wait(0);
+            pagestats();
+
+        }
+        else{
+            a = 8;
+            printf("a:%d\n", a);
+            pagestats();
+        }
+        // a = 3;
+        // printf("a:%d\n", a);
+        // pagestats();
     }
-    else
+    else{
         wait(0);
+        pagestats();
+        printf("===============================\n");
+    }
 
     // pagestats();
     // if(fork() != 0){
