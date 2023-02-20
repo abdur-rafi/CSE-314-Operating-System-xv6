@@ -74,6 +74,7 @@ int             pagestatsFromRefCount();
 void            addLive(pte_t *pte, int procId, int vpn);
 int             getLiveCount();
 void            removePTE(pte_t *);
+void            removeLive(pte_t* );
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);

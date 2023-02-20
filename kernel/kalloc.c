@@ -114,6 +114,35 @@ void addLive(pte_t *pte, int procId, int vpn){
   release(&live.lock);
 }
 
+void removeLive(uint64* pte){
+  struct node* n;
+  acquire(&live.lock);
+  n = live.list;
+  if(n == 0){
+    panic("live list empty");
+  }
+  else if(n->pte == pte){
+    live.list = n->next;
+    // nodefree(n);
+  }
+  else{
+    int f = 0;
+    while(n->next != 0){
+      if(n->next->pte == pte){
+        struct node* t = n->next;
+        n->next = n->next->next;
+        nodefree(t);
+        f = 1;
+        if(n->next == 0) break;
+      }
+      n = n->next;
+    }
+    if(!f){
+      panic("pte not found");
+    }
+  }
+  release(&live.lock);
+}
 
 void kfree2(void *pa);
 

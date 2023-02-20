@@ -203,6 +203,12 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     if(do_free){
       // removePTE(pte);
       uint64 pa = PTE2PA(*pte);
+      if(*pte & PTE_SWAPPED){
+
+      }
+      else{
+        removeLive(pte);
+      }
       // printf("kfree en\n");
       kfree((void*)pa);
     }
@@ -431,6 +437,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
       decRefCount(PTE2PPN(*pte));
       // pa0 = (uint64) kalloc();
       pa0 = (uint64) mem;
+      removeLive(pte);
       *pte = PA2PTE(pa0) | flags;
       addLive(pte, procId, VA2VPN(va0));
       // enqueue(pte);
@@ -534,6 +541,7 @@ int assignPagesOnWrite(pagetable_t p, int procId){
   decRefCount(PTE2PPN(*pte));
   flags |= PTE_W;
   flags &= ~PTE_COW;
+  removeLive(pte);
   *pte = PA2PTE(mem) | flags;
   addLive(pte, procId, VA2VPN(va));
   // enqueue(pte);
