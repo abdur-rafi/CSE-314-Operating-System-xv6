@@ -30,7 +30,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
-
+  printf("p1: %d\n",p->pid);
   begin_op();
 
   if((ip = namei(path)) == 0){
@@ -73,6 +73,7 @@ exec(char *path, char **argv)
   ip = 0;
 
   p = myproc();
+  printf("p2: %d\n",p->pid);
   uint64 oldsz = p->sz;
 
   // Allocate two pages at the next page boundary.

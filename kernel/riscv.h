@@ -363,6 +363,7 @@ typedef uint64 *pagetable_t; // 512 PTEs
 #define PA2PPN(pa) (((uint64)(pa) >> 12) - (KBASE))
 #define PPN2PA(ppn) (((uint64)(ppn + (KBASE)) << 12))
 
+#define VA2VPN(va) ((uint64) va >> 12)
 // #define PTE2PPN(pte) (((uint64)(pte) >> 10))
 // #define PA2PPN(pa) (((uint64)(pa) >> 12))
 // #define PPN2PA(ppn) (((uint64)(ppn ) << 12))

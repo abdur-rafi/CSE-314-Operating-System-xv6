@@ -15,6 +15,105 @@
 #define SWAPPED 2
 #define FREE 3
 
+struct run {
+  struct run *next;
+};
+
+
+struct node {
+  pte_t *pte;
+  int procId;
+  int vpn;
+  struct node* next;
+};
+
+
+struct {
+  struct spinlock lock;
+  struct run *freelist;
+} nodemem;
+
+void
+nodeinit(void)
+{
+  initlock(&nodemem.lock, "nodemem");
+  nodemem.freelist = 0;
+}
+
+struct node *
+nodealloc(void)
+{
+  struct run *r;
+  struct node *s;
+
+  acquire(&nodemem.lock);
+  r = nodemem.freelist;
+  if(!r){
+    release(&nodemem.lock);
+    char *mem = kalloc();
+    char *mem_end = mem + PGSIZE;
+    for(; mem + sizeof(struct node) <= mem_end; mem += sizeof(struct node)){
+      r = (struct run*)mem;
+
+      acquire(&nodemem.lock);
+      r->next = nodemem.freelist;
+      nodemem.freelist = r;
+      release(&nodemem.lock);
+    }
+    acquire(&nodemem.lock);
+    r = nodemem.freelist;
+  }
+  nodemem.freelist = r->next;
+  release(&nodemem.lock);
+  
+  s = (struct node*)r;
+
+  
+  return s;
+}
+void
+nodefree(struct node *s)
+{
+  struct run *r;
+
+  if(!s)
+    panic("swapfree");
+  r = (struct run*)s;
+  acquire(&nodemem.lock);
+  r->next = nodemem.freelist;
+  nodemem.freelist = r;
+  release(&nodemem.lock);
+}
+struct {
+  struct node* list;
+  struct spinlock lock;
+} live;
+
+void liveinit(){
+  initlock(&live.lock, "livelock");
+  live.list = 0;
+}
+
+void addLive(pte_t *pte, int procId, int vpn){
+  struct node* nd = nodealloc();
+  if(nd == 0){
+    panic("node alloc");
+  }
+  nd->procId = procId;
+  nd->pte = pte;
+  nd->vpn = vpn;
+  nd->next = 0;
+  acquire(&live.lock);
+  if(live.list == 0){
+    live.list = nd;
+  }
+  else{
+    nd->next = live.list;
+    live.list = nd;
+  }
+  release(&live.lock);
+}
+
 char pageStatus[PAGE_COUNT];
 struct swap* swapped[PAGE_COUNT];
 
@@ -214,9 +313,6 @@ void freerange(void *pa_start, void *pa_end);
 extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
 
-struct run {
-  struct run *next;
-};
 
 struct {
   struct spinlock lock;
@@ -229,6 +325,7 @@ kinit()
   initlock(&kmem.lock, "kmem");
   initRefCount();
   freerange(end, (void*)PHYSTOP);
+  nodeinit();
 }
 
 void
