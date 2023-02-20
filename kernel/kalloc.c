@@ -102,32 +102,32 @@ int getFront(){
 
 
 void enqueue(pte_t *pte){
-  int ppn = PTE2PPN(*pte);
+  // int ppn = PTE2PPN(*pte);
 
-  if(ppn < 0 || ppn >= PAGE_COUNT)
-    panic("enqueue");
+  // if(ppn < 0 || ppn >= PAGE_COUNT)
+  //   panic("enqueue");
 
-  int status = getPageStatus(ppn);
-  if(status == FREE){
-    setPageStatus(ppn, IN_QUEUE);
-    q.uniqueCount++;
-  }
-  else if(status == IN_QUEUE){
+  // int status = getPageStatus(ppn);
+  // if(status == FREE){
+  //   setPageStatus(ppn, IN_QUEUE);
+  //   q.uniqueCount++;
+  // }
+  // else if(status == IN_QUEUE){
 
-  }
-  else if(status == SWAPPED){
-    *pte = ((*pte) & (~PTE_V)) | PTE_SWAPPED;
-    return;
-  }
-  else{
-    // printf("%d issue\n", ppn);
-  }
-  if(q.uniqueCount == MAX_LIVE_PAGE + 1){
-    evictPage(getFront());
-  }
-  int index = (q.f + q.entryCount) % QUEUE_SIZE;
-  q.entryCount++;
-  q.arr[index] = pte;
+  // }
+  // else if(status == SWAPPED){
+  //   *pte = ((*pte) & (~PTE_V)) | PTE_SWAPPED;
+  //   return;
+  // }
+  // else{
+  //   // printf("%d issue\n", ppn);
+  // }
+  // if(q.uniqueCount == MAX_LIVE_PAGE + 1){
+  //   evictPage(getFront());
+  // }
+  // int index = (q.f + q.entryCount) % QUEUE_SIZE;
+  // q.entryCount++;
+  // q.arr[index] = pte;
   
   // printf("%d %d\n", q.entryCount, q.liveCount);
 }
@@ -172,8 +172,8 @@ void decRefCount(uint64 ppn){
     int pgStatus = getPageStatus(ppn);
     if( pgStatus == IN_QUEUE){
       kfree2((void*)pa2);
-      removeFromQueue(ppn, 1);
-      setPageStatus(ppn, FREE);
+      // removeFromQueue(ppn, 1);
+      // setPageStatus(ppn, FREE);
     }
     else if(pgStatus == SWAPPED){
       // printf("asdf");
