@@ -9,11 +9,12 @@
 #include "riscv.h"
 #include "defs.h"
 #define MAX_LIVE_PAGE 50
-#define QUEUE_SIZE MAX_LIVE_PAGE * NPROC
+#define QUEUE_SIZE (MAX_LIVE_PAGE) * (NPROC)
 
 #define IN_QUEUE 1
 #define SWAPPED 2
 #define FREE 3
+
 
 struct run {
   struct run *next;
@@ -87,11 +88,17 @@ nodefree(struct node *s)
 struct {
   struct node* list;
   struct spinlock lock;
+  int count[PAGE_COUNT];
+  int liveCount;
 } live;
 
 void liveinit(){
   initlock(&live.lock, "livelock");
   live.list = 0;
+  for(int i = 0; i < PAGE_COUNT; ++i){
+    live.count[i] = 0;
+  }
+  live.liveCount = 0;
 }
 
 void addLive(pte_t *pte, int procId, int vpn){
@@ -111,6 +118,11 @@ void addLive(pte_t *pte, int procId, int vpn){
     nd->next = live.list;
     live.list = nd;
   }
+  int ppn = PTE2PPN(*pte);
+  live.count[ppn] += 1;
+  if(live.count[ppn] == 1){
+    ++live.liveCount;
+  }
   release(&live.lock);
 }
 
@@ -123,7 +135,7 @@ void removeLive(uint64* pte){
   }
   else if(n->pte == pte){
     live.list = n->next;
-    // nodefree(n);
+    nodefree(n);
   }
   else{
     int f = 0;
@@ -133,13 +145,21 @@ void removeLive(uint64* pte){
         n->next = n->next->next;
         nodefree(t);
         f = 1;
+        
         if(n->next == 0) break;
       }
       n = n->next;
     }
+
     if(!f){
       panic("pte not found");
     }
+    int ppn = PTE2PPN(*pte);
+    live.count[ppn] -= 1;
+    if(live.count[ppn] == 0)
+      --live.liveCount;
+    else if(live.count[ppn] < 0)
+      panic("live count < 0");
   }
   release(&live.lock);
 }
@@ -152,74 +172,10 @@ struct {
 } refCount;
 
 
-
-// void evictPage(int ppn){
-//   if(ppn < 0 || ppn >= PAGE_COUNT)
-//     panic("evict_ page");
- 
-//   if(getPageStatus(ppn) != IN_QUEUE){
-//     printf("%d %d\n", q.entryCount,q.uniqueCount);
-//     panic("evict page");
-//   }
-//   swapped[ppn] = swapalloc();
-//   if(swapped[ppn] == 0){
-//     panic("swapp");
-//   }
-//   // printf("%d\n", sizeof(char *));
-//   printf("s1 %d\n", ppn);
-//   swapout(swapped[ppn],(char *) PPN2PA(ppn));
-//   // printf("evicted\n");
-//   removeFromQueue(ppn, 1);
-//   setPageStatus(ppn, SWAPPED);
-//   kfree2((void*) PPN2PA(ppn));
-//   printf("evicted\n");
-// }
-
-// void removeFromQueue(int ppn, int markInvalid){
-//   if(getPageStatus(ppn) != IN_QUEUE)
-//     panic("not in queue");
-//   int j = 0;
-//   for(int i = 0; i < q.entryCount; ++i){
-//     int index = (q.f + i) % QUEUE_SIZE;
-//     pte_t *pte = q.arr[index];
-//     if(PTE2PPN(*pte) != ppn){
-//       q.temp[j++] = pte;
-//     }
-//     else if(markInvalid){
-//       *pte = ((*pte) & (~PTE_V)) | (PTE_SWAPPED);
-//     }
-//   }
-//   q.f = 0;
-//   q.entryCount = j;
-//   for(int i = 0; i < j; ++i)
-//     q.arr[i] = q.temp[i];
-//   --q.uniqueCount;
-// }
-
-// int getFront(){
-//   if(q.uniqueCount <= 0){
-//     panic("getFront: empty");
-//   }
-//   int i = q.f;
-//   int ppn = PTE2PPN(*q.arr[i]);
-//   if(ppn < 0 || ppn >= PAGE_COUNT)
-//     panic("getFront: inv ppn");
- 
-//   return ppn;
-// }
-
-
 int getLiveCount(){
-  // printf("entry count : %d\n", q.entryCount);
-  // return q.uniqueCount;
   int c = 0;
-  struct node* n;
   acquire(&live.lock);
-  n = live.list;
-  while(n != 0){
-    n = n->next;
-    ++c;
-  }
+  c = live.liveCount;  
   release(&live.lock);  
   return c;
 }

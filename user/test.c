@@ -5,11 +5,20 @@
 int main(){
 
     // printf("hello world");
-    // int a = 5;
+    int a = 5;
     // int b = 3;
     // pagestats();
-    // sbrk(38 * 4096 );
+    sbrk(10 * 4096 );
     pagestats();
+    if(fork() == 0){
+        a = 3;
+        printf("a:%d\n", a);
+        pagestats();
+    }
+    else
+        wait(0);
+
+    // pagestats();
     // if(fork() != 0){
     //     wait(0);
     //     pagestats();
