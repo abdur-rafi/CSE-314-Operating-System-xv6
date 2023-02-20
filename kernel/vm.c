@@ -358,7 +358,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   pte_t *pte;
   uint64 pa, i;
   uint64 flags;
-
+  // printf("uvm copy entry");
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0,0)) == 0)
       panic("uvmcopy: pte should exist");
@@ -405,6 +405,8 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
+  if(dstva >= MAXVA)
+    return -1;
   uint64 n, va0, pa0;
   pte_t *pte;
   while(len > 0){
@@ -422,8 +424,11 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
       uint64 flags = PTE_FLAGS(*pte);
       flags |= (PTE_W);
       flags &= (~PTE_COW);
+      char *mem = kalloc();
+      memmove((void*) mem, (void*) pa0, PGSIZE);
       decRefCount(PTE2PPN(*pte));
-      pa0 = (uint64) kalloc();
+      // pa0 = (uint64) kalloc();
+      pa0 = (uint64) mem;
       *pte = PA2PTE(pa0) | flags;
       enqueue(pte);
     }
@@ -453,7 +458,7 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
     if(n > len)
       n = len;
     memmove(dst, (void *)(pa0 + (srcva - va0)), n);
-
+    
     len -= n;
     dst += n;
     srcva = va0 + PGSIZE;
@@ -508,7 +513,9 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
 int assignPagesOnWrite(pagetable_t p){
   // printf("here\n");
-  uint64 va = PGROUNDDOWN(r_stval());
+  // uint64 va = PGROUNDDOWN(r_stval());
+  uint64 va = r_stval();
+  if(va >= MAXVA) return 0;
   pte_t *pte = walk(p,va,0,0);
   if(pte == 0) return 0;
   uint64 flags = PTE_FLAGS(*pte);

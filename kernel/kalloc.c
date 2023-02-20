@@ -218,7 +218,7 @@ freerange(void *pa_start, void *pa_end)
 void kfree(void *pa){
   uint64 ppn = PA2PPN((uint64)pa);
   if(getRefCount(ppn) <= 0){
-    panic("kfree2");
+    panic("kfree__");
   }
   decRefCount(ppn);
 }
