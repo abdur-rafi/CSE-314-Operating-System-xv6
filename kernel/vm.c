@@ -161,9 +161,9 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
     if(*pte & PTE_V)
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
-    if(enq)
-      enqueue(pte);
-    
+    if(enq){
+      addLive(pte, procId, VA2VPN(a));
+    }    
     if(a == last)
       break;
     a += PGSIZE;
@@ -432,7 +432,8 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
       // pa0 = (uint64) kalloc();
       pa0 = (uint64) mem;
       *pte = PA2PTE(pa0) | flags;
-      enqueue(pte);
+      addLive(pte, procId, VA2VPN(va0));
+      // enqueue(pte);
     }
     memmove((void *)(pa0 + (dstva - va0)), src, n);
 
@@ -513,7 +514,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
 
 
-int assignPagesOnWrite(pagetable_t p, int pid){
+int assignPagesOnWrite(pagetable_t p, int procId){
   // printf("here\n");
   // uint64 va = PGROUNDDOWN(r_stval());
   uint64 va = r_stval();
@@ -534,6 +535,7 @@ int assignPagesOnWrite(pagetable_t p, int pid){
   flags |= PTE_W;
   flags &= ~PTE_COW;
   *pte = PA2PTE(mem) | flags;
-  enqueue(pte);
+  addLive(pte, procId, VA2VPN(va));
+  // enqueue(pte);
   return 1;
 }

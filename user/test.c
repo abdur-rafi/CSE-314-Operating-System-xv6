@@ -8,7 +8,7 @@ int main(){
     // int a = 5;
     // int b = 3;
     // pagestats();
-    sbrk(38 * 4096 );
+    // sbrk(38 * 4096 );
     pagestats();
     // if(fork() != 0){
     //     wait(0);

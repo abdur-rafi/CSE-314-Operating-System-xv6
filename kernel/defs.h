@@ -71,7 +71,7 @@ void            decRefCount(uint64 ppn);
 int             getRefCount(uint64 ppn);
 int             pagestats();
 int             pagestatsFromRefCount();
-void            enqueue(pte_t* pte);
+void            addLive(pte_t *pte, int procId, int vpn);
 int             getLiveCount();
 void            removePTE(pte_t *);
 // log.c
