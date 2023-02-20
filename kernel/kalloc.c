@@ -21,78 +21,144 @@ struct run {
 };
 
 
-struct node {
+struct liveListNode {
   pte_t *pte;
   int procId;
   int vpn;
-  struct node* next;
+  struct liveListNode* next;
+};
+
+struct swappedListNode{
+  int procId;
+  int vpn;
+  int refCount;
+  struct swap* sp;
 };
 
 
 struct {
   struct spinlock lock;
   struct run *freelist;
-} nodemem;
+} liveListNodeMem, swappedListNodeMem;
 
 void
-nodeinit(void)
+liveListNodeInit(void)
 {
-  initlock(&nodemem.lock, "nodemem");
-  nodemem.freelist = 0;
+  initlock(&liveListNodeMem.lock, "liveListNodeMem");
+  liveListNodeMem.freelist = 0;
 }
 
-struct node *
-nodealloc(void)
+struct liveListNode *
+liveListNodeAlloc(void)
 {
   struct run *r;
-  struct node *s;
+  struct liveListNode *s;
 
-  acquire(&nodemem.lock);
-  r = nodemem.freelist;
+  acquire(&liveListNodeMem.lock);
+  r = liveListNodeMem.freelist;
   if(!r){
-    release(&nodemem.lock);
+    release(&liveListNodeMem.lock);
     char *mem = kalloc();
     char *mem_end = mem + PGSIZE;
-    for(; mem + sizeof(struct node) <= mem_end; mem += sizeof(struct node)){
+    for(; mem + sizeof(struct liveListNode) <= mem_end; mem += sizeof(struct liveListNode)){
       r = (struct run*)mem;
 
-      acquire(&nodemem.lock);
-      r->next = nodemem.freelist;
-      nodemem.freelist = r;
-      release(&nodemem.lock);
+      acquire(&liveListNodeMem.lock);
+      r->next = liveListNodeMem.freelist;
+      liveListNodeMem.freelist = r;
+      release(&liveListNodeMem.lock);
     }
-    acquire(&nodemem.lock);
-    r = nodemem.freelist;
+    acquire(&liveListNodeMem.lock);
+    r = liveListNodeMem.freelist;
   }
-  nodemem.freelist = r->next;
-  release(&nodemem.lock);
+  liveListNodeMem.freelist = r->next;
+  release(&liveListNodeMem.lock);
   
-  s = (struct node*)r;
+  s = (struct liveListNode*)r;
 
   
   return s;
 }
 void
-nodefree(struct node *s)
+liveListNodeFree(struct liveListNode *s)
 {
   struct run *r;
 
   if(!s)
     panic("swapfree");
   r = (struct run*)s;
-  acquire(&nodemem.lock);
-  r->next = nodemem.freelist;
-  nodemem.freelist = r;
-  release(&nodemem.lock);
+  acquire(&liveListNodeMem.lock);
+  r->next = liveListNodeMem.freelist;
+  liveListNodeMem.freelist = r;
+  release(&liveListNodeMem.lock);
 }
+
+void
+swappedListNodeInit(void)
+{
+  initlock(&swappedListNodeMem.lock, "swappedListNodeMem");
+  swappedListNodeMem.freelist = 0;
+}
+
+struct swappedListNode *
+swappedListNodeAlloc(void)
+{
+  struct run *r;
+  struct swappedListNode *s;
+
+  acquire(&swappedListNodeMem.lock);
+  r = swappedListNodeMem.freelist;
+  if(!r){
+    release(&swappedListNodeMem.lock);
+    char *mem = kalloc();
+    char *mem_end = mem + PGSIZE;
+    for(; mem + sizeof(struct swappedListNode) <= mem_end; mem += sizeof(struct swappedListNode)){
+      r = (struct run*)mem;
+
+      acquire(&swappedListNodeMem.lock);
+      r->next = swappedListNodeMem.freelist;
+      swappedListNodeMem.freelist = r;
+      release(&swappedListNodeMem.lock);
+    }
+    acquire(&swappedListNodeMem.lock);
+    r = swappedListNodeMem.freelist;
+  }
+  swappedListNodeMem.freelist = r->next;
+  release(&swappedListNodeMem.lock);
+  
+  s = (struct swappedListNode*)r;
+
+  
+  return s;
+}
+void
+swappedListNodeFree(struct swappedListNode *s)
+{
+  struct run *r;
+
+  if(!s)
+    panic("swapfree");
+  r = (struct run*)s;
+  acquire(&swappedListNodeMem.lock);
+  r->next = swappedListNodeMem.freelist;
+  swappedListNodeMem.freelist = r;
+  release(&swappedListNodeMem.lock);
+}
+
+
 struct {
-  struct node* list;
+  struct liveListNode* list;
   struct spinlock lock;
   int count[PAGE_COUNT];
   int liveCount;
 } live;
 
-void liveinit(){
+struct {
+  struct swappedListNode* list;
+  struct spinlock lock;
+} swapped;
+
+void liveListInit(){
   initlock(&live.lock, "livelock");
   live.list = 0;
   for(int i = 0; i < PAGE_COUNT; ++i){
@@ -100,11 +166,39 @@ void liveinit(){
   }
   live.liveCount = 0;
 }
+void swappedListInit(){
+  initlock(&swapped.lock, "swappedlock");
+  swapped.list = 0;
+}
+// with liveList lock held
+void swap(struct liveListNode* n){
+  if(!holding(&live.lock)){
+    panic("liveList lock not held");
+  }
+  if(n == 0){
+    panic("null pointer to swap");
+  }
+  struct swappedListNode* sn = swappedListNodeAlloc();
+  if(sn == 0){
+    panic("swapListNode not allocated");
+  }
+  struct swap* s = swapalloc();
+  if(s == 0){
+    panic("swap not allocated");
+  }
+  swapout(s,(char*) PPN2PA(*n->pte));
+  int refCount = 0;
+  
+  sn->procId = n->procId;
+  sn->refCount = refCount;
+  sn->sp = s;
+  
+}
 
 void addLive(pte_t *pte, int procId, int vpn){
-  struct node* nd = nodealloc();
+  struct liveListNode* nd = liveListNodeAlloc();
   if(nd == 0){
-    panic("node alloc");
+    panic("liveListNode alloc");
   }
   nd->procId = procId;
   nd->pte = pte;
@@ -123,11 +217,15 @@ void addLive(pte_t *pte, int procId, int vpn){
   if(live.count[ppn] == 1){
     ++live.liveCount;
   }
+  // issue
+  if(live.liveCount >= MAX_LIVE_PAGE){
+    
+  }
   release(&live.lock);
 }
 
 void removeLive(uint64* pte){
-  struct node* n;
+  struct liveListNode* n;
   acquire(&live.lock);
   n = live.list;
   if(n == 0){
@@ -135,15 +233,15 @@ void removeLive(uint64* pte){
   }
   else if(n->pte == pte){
     live.list = n->next;
-    nodefree(n);
+    liveListNodeFree(n);
   }
   else{
     int f = 0;
     while(n->next != 0){
       if(n->next->pte == pte){
-        struct node* t = n->next;
+        struct liveListNode* t = n->next;
         n->next = n->next->next;
-        nodefree(t);
+        liveListNodeFree(t);
         f = 1;
         
         if(n->next == 0) break;
@@ -175,7 +273,7 @@ struct {
 
 int getLiveCount(){
   int c = 0;
-  struct node* n;
+  struct liveListNode* n;
   acquire(&live.lock);
    n = live.list;
   while(n != 0){
@@ -241,7 +339,8 @@ kinit()
   initlock(&kmem.lock, "kmem");
   initRefCount();
   freerange(end, (void*)PHYSTOP);
-  nodeinit();
+  liveListNodeInit();
+  swappedListNodeInit();
 }
 
 void
