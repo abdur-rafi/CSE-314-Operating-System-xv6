@@ -11,6 +11,7 @@
 
 struct swap {
   uint blocknos[NBLOCKPERPAGE];
+  int refCount;
 };
 
 struct run {
@@ -132,5 +133,34 @@ swapin(char *dst_pa, struct swap *src_sp)
     bp = bread(ROOTDEV, *blockno);
     memmove(dst_pa, bp->data, BSIZE);
     brelse(bp);
+  }
+}
+
+void swapSetRefCount(struct swap* s, int c){
+  if(s == 0){
+    panic("invalid swap ref");
+  }
+  s->refCount = c;
+}
+
+
+void swapIncCount(struct swap* s){
+  if(s == 0){
+    panic("invalid swap ref");
+  }
+  s->refCount++;
+}
+
+
+void swapDecCount(struct swap* s){
+  if(s == 0){
+    panic("invalid swap ref");
+  }
+  s->refCount--;
+  if(s->refCount == 0){
+    swapfree(s);
+  }
+  else if(s->refCount < 0){
+    panic("swap ref count  0");
   }
 }

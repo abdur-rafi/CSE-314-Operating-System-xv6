@@ -128,6 +128,11 @@ void            swapfree(struct swap*);
 struct swap*    swapalloc(void);
 void            swapout(struct swap *dst_sp, char *src_pa);
 void            swapin(char *dst_pa, struct swap *src_sp);
+void            swapSetRefCount(struct swap* s, int c);
+void            swapIncCount(struct swap* s);
+void            swapDecCount(struct swap* s);
+
+
 
 // swtch.S
 void            swtch(struct context*, struct context*);
