@@ -547,3 +547,16 @@ int assignPagesOnWrite(pagetable_t p, int procId){
   // enqueue(pte);
   return 1;
 }
+
+int getSwappedPage(pagetable_t p, int procId){
+  uint64 va = r_stval();
+  if(va >= MAXVA) return 0;
+  pte_t *pte = walk(p,va,0,0);
+  if(pte == 0) return 0;
+  int vpn = VA2VPN(va);
+  // uint64 flags = PTE_FLAGS(*pte);
+  swapIn(vpn, procId, pte);
+  // printf("swap flag: %d %d\n", flags & PTE_SWAPPED, vpn);
+
+  return 1;
+}

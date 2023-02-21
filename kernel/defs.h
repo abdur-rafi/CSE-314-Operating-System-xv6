@@ -75,6 +75,8 @@ void            addLive(pte_t *pte, int procId, int vpn);
 int             getLiveCount();
 void            removePTE(pte_t *);
 void            removeLive(pte_t* );
+void            swapIn(int vpn, int procId, uint64 *pte);
+
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
@@ -193,8 +195,9 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64, int);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
-int            assignPagesOnWrite(pagetable_t p, int);
+int             assignPagesOnWrite(pagetable_t p, int);
 int             pageCount(pagetable_t, int);
+int             getSwappedPage(pagetable_t p, int procId);
 // plic.c
 void            plicinit(void);
 void            plicinithart(void);

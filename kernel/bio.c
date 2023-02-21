@@ -119,6 +119,7 @@ brelse(struct buf *b)
   if(!holdingsleep(&b->lock))
     panic("brelse");
 
+  // printf("brelse enter\n");
   releasesleep(&b->lock);
 
   acquire(&bcache.lock);
@@ -134,6 +135,8 @@ brelse(struct buf *b)
   }
   
   release(&bcache.lock);
+  // printf("brelse exit\n");
+
 }
 
 void

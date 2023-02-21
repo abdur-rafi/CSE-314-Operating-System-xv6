@@ -2,36 +2,64 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-int main(){
+#define SZ 2000
 
-    // printf("hello world");
-    int a = 5;
-    // int b = 3;
-    // pagestats();
-    printf("===============================\n");
-    sbrk(37 * 4096 );
+void test1(){
     pagestats();
-    if(fork() == 0){
-        if(fork() != 0){
+    int a = 5;
+    int *b =(int*) malloc(SZ * sizeof(int));
+    printf("malloc complete\n");
+    for(int i = 0; i < SZ; ++i)
+        b[i] = i + 1;
+    sbrk(35 * 4096);
+    printf("sbrk done\n");
+    printf("a:%d b[%d]:%d\n", a, 5, b[5]);
+    pagestats();
+}
 
-            wait(0);
-            pagestats();
+int main(){
+    test1();
+    // printf("hello world");
+    // pagestats();
+    // int a = 5;
+    // int *b =(int*) malloc(SZ * sizeof(int));
+    // for(int i = 0; i < SZ; ++i)
+    //     b[i] = i + 1;
+    // // int a[20000];
+    // // for(int i = 0; i < 20000; ++i){
+    // //     a[i] = 0;
+    // // }
+    // // int b = 3;
+    // // pagestats();
+    // // printf("a[%d]: %d\n", 0, a[0]);
+    // // printf("===============================\n");
+    // // sbrk(55 * 4096 );
+    // // pagestats();
+    // // sbrk(3 * 4096);
+    // // pagestats();
+    // printf("a:%d b[%d]:%d\n", a, 5, b[5]);
 
-        }
-        else{
-            a = 8;
-            printf("a:%d\n", a);
-            pagestats();
-        }
-        // a = 3;
-        // printf("a:%d\n", a);
-        // pagestats();
-    }
-    else{
-        wait(0);
-        pagestats();
-        printf("===============================\n");
-    }
+    // if(fork() == 0){
+    //     if(fork() != 0){
+
+    //         wait(0);
+    //         pagestats();
+
+    //     }
+    //     else{
+    //         // a = 8;
+    //         // printf("a:%d\n", a);
+    //         pagestats();
+    //     }
+    //     // a = 3;
+    //     // printf("a:%d\n", a);
+    //     // pagestats();
+    // }
+    // else{
+    //     wait(0);
+    //     pagestats();
+    //     printf("===============================\n");
+    // }
 
     // pagestats();
     // if(fork() != 0){
