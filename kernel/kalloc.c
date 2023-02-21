@@ -353,6 +353,32 @@ void swapIn(int vpn, int procId, uint64 *pte){
   printf("swapIn ex\n");
 }
 
+void removeSwap(int procId, int vpn){
+  struct swappedListNode *s , *t;
+  acquire(&swapped.lock);
+  s = swapped.list;
+  if(s == 0){
+    panic("swapped list head empty\n");
+  }
+  int f = 0;
+  while(s->next){
+    if(s->next->procId == procId && s->next->vpn == vpn){
+      f = 1;
+      t = s->next;
+      s->next = t->next;
+      release(&swapped.lock);
+      swapfree(t->sp);
+      swappedListNodeFree(t);
+      acquire(&swapped.lock);
+      break;
+    }
+  }
+  if(!f){
+    panic("swap not founc\n");
+  }
+  release(&swapped.lock);
+}
+
 void removeLast(){
   acquire(&live.lock);
   struct liveListNode* t = live.list;

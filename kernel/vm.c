@@ -123,8 +123,10 @@ walkaddr(pagetable_t pagetable, uint64 va, int procId)
   if(pte == 0)
     return 0;
   
-  if((*pte & PTE_V) == 0)
+  if((*pte & PTE_V) == 0){
+    printf("=====================");
     return 0;
+  }
   if((*pte & PTE_U) == 0)
     return 0;
   pa = PTE2PA(*pte);
@@ -205,13 +207,15 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       // removePTE(pte);
       uint64 pa = PTE2PA(*pte);
       if(*pte & PTE_SWAPPED){
-
+        // printf("____________\n");
+        
       }
       else{
         removeLive(pte);
+        kfree((void*)pa);
       }
       // printf("kfree en\n");
-      kfree((void*)pa);
+      // printf("kfree ex\n");
     }
     *pte = 0;
   }

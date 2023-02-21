@@ -15,6 +15,7 @@ void test1(){
     printf("sbrk done\n");
     printf("a:%d b[%d]:%d\n", a, 5, b[5]);
     pagestats();
+    printf("exiting test1\n");
 }
 
 int main(){
