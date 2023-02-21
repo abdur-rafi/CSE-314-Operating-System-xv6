@@ -7,7 +7,7 @@
 #include "defs.h"
 #include "elf.h"
 
-static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
+static int loadseg(pde_t *, uint64, struct inode *, uint, uint, int);
 
 int flags2perm(int flags)
 {
@@ -65,7 +65,7 @@ exec(char *path, char **argv)
     if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags),p->pid)) == 0)
       goto bad;
     sz = sz1;
-    if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+    if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz, p->pid) < 0)
       goto bad;
   }
   iunlockput(ip);
@@ -146,13 +146,13 @@ exec(char *path, char **argv)
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
 static int
-loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
+loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz, int procId)
 {
   uint i, n;
   uint64 pa;
 
   for(i = 0; i < sz; i += PGSIZE){
-    pa = walkaddr(pagetable, va + i);
+    pa = walkaddr(pagetable, va + i, procId);
     if(pa == 0)
       panic("loadseg: address should exist");
     if(sz - i < PGSIZE)

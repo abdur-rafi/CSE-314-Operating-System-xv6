@@ -90,7 +90,7 @@ pipewrite(struct pipe *pi, uint64 addr, int n)
       sleep(&pi->nwrite, &pi->lock);
     } else {
       char ch;
-      if(copyin(pr->pagetable, &ch, addr + i, 1) == -1)
+      if(copyin(pr->pagetable, &ch, addr + i, 1, pr->pid) == -1)
         break;
       pi->data[pi->nwrite++ % PIPESIZE] = ch;
       i++;

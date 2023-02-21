@@ -111,7 +111,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc,int enq)
 // or 0 if not mapped.
 // Can only be used to look up user pages.
 uint64
-walkaddr(pagetable_t pagetable, uint64 va)
+walkaddr(pagetable_t pagetable, uint64 va, int procId)
 {
   pte_t *pte;
   uint64 pa;
@@ -122,6 +122,7 @@ walkaddr(pagetable_t pagetable, uint64 va)
   pte = walk(pagetable, va, 0, 0);
   if(pte == 0)
     return 0;
+  
   if((*pte & PTE_V) == 0)
     return 0;
   if((*pte & PTE_U) == 0)
@@ -419,7 +420,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
   pte_t *pte;
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    pa0 = walkaddr(pagetable, va0);
+    pa0 = walkaddr(pagetable, va0, procId);
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (dstva - va0);
@@ -455,13 +456,13 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
 // Copy len bytes to dst from virtual address srcva in a given page table.
 // Return 0 on success, -1 on error.
 int
-copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
+copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len, int procId)
 {
   uint64 n, va0, pa0;
 
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);
-    pa0 = walkaddr(pagetable, va0);
+    pa0 = walkaddr(pagetable, va0, procId);
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (srcva - va0);
@@ -481,14 +482,14 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 // until a '\0', or max.
 // Return 0 on success, -1 on error.
 int
-copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
+copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max, int procId)
 {
   uint64 n, va0, pa0;
   int got_null = 0;
 
   while(got_null == 0 && max > 0){
     va0 = PGROUNDDOWN(srcva);
-    pa0 = walkaddr(pagetable, va0);
+    pa0 = walkaddr(pagetable, va0, procId);
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (srcva - va0);
