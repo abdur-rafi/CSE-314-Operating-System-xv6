@@ -157,10 +157,14 @@ void swapDecCount(struct swap* s){
     panic("invalid swap ref");
   }
   s->refCount--;
-  if(s->refCount == 0){
-    swapfree(s);
-  }
-  else if(s->refCount < 0){
+  
+  if(s->refCount < 0){
     panic("swap ref count  0");
   }
+}
+int swapGetCount(struct swap* s){
+  if(s == 0){
+    panic("invalid swap ref");
+  }
+  return s->refCount;
 }

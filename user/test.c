@@ -11,7 +11,7 @@ void test1(){
     printf("malloc complete\n");
     for(int i = 0; i < SZ; ++i)
         b[i] = i + 1;
-    // sbrk(35 * 4096);
+    sbrk(35 * 4096);
     printf("sbrk done\n");
     printf("a:%d b[%d]:%d\n", a, 5, b[5]);
     pagestats();

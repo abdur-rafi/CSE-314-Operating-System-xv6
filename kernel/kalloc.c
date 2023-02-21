@@ -38,6 +38,7 @@ struct swappedListNode{
   int vpn;
   struct swap* sp;
   struct swappedListNode* next;
+  pte_t *pte;
 };
 
 
@@ -198,6 +199,7 @@ void swappedListInit(){
     swapped.list->procId = 0;
     swapped.list->sp = 0;
     swapped.list->vpn = 0;
+    swapped.list->pte = 0;
   }
 }
 // with liveList lock held
@@ -252,6 +254,7 @@ void swapOut(struct liveListNode* n){
       sn->procId = l->next->procId;
       sn->vpn = l->next->vpn;
       sn->sp = s;
+      sn->pte = l->next->pte;
       if(swapped.list == 0){
         panic("swapped list head 0");
       }
@@ -292,69 +295,75 @@ void swapOut(struct liveListNode* n){
 void swapIn(int vpn, int procId, uint64 *pte){
 
   // release space
-  // printf("swapIn en\n");
-  // acquire(&live.lock);
-  // while(live.liveCount >= MAX_LIVE_PAGE){
-  //   release(&live.lock);
-  //   removeLast();
-  //   acquire(&live.lock);
-  // }
-  // release(&live.lock);
+  printf("swapIn en\n");
+  acquire(&live.lock);
+  while(live.liveCount >= MAX_LIVE_PAGE){
+    release(&live.lock);
+    removeLast();
+    acquire(&live.lock);
+  }
+  release(&live.lock);
 
-  // struct swappedListNode* n;
-  // acquire(&swapped.lock);
-  // n = swapped.list;
-  // if(n == 0){
-  //   panic("swap list empty\n");
-  // }
-  // int f = 0;
-  // while(n->next){
-  //   if(n->next->procId == procId && n->next->vpn == vpn){
-  //     f = 1;
-  //     if(n->next->refCount == 0){
-  //       panic("ref count is 0");
-  //     }
-  //     struct swappedListNode *t;
-  //     release(&swapped.lock);
-
-  //     char* mem =(char *) kalloc();
-  //     swapin(mem,n->next->sp);
-  //     *pte = (PTE_FLAGS(*pte)) | (PA2PTE((uint64)mem)) | (PTE_V);
-  //     if(*pte | PTE_COW){
-  //       *pte &= (~PTE_COW);
-  //       *pte |= PTE_W;
-  //     }
-  //     *pte &= (~PTE_SWAPPED);
-  //     addLive(pte, procId, vpn);
+  struct swappedListNode* n;
+  acquire(&swapped.lock);
+  n = swapped.list;
+  if(n == 0){
+    panic("swap list empty\n");
+  }
+  int f = 0;
+  struct swap* s;
+  char* mem;
+  while(n->next){
+    if(n->next->procId == procId && n->next->vpn == vpn){
+      f = 1;
+      release(&swapped.lock);
+      mem =(char *) kalloc();
+      swapin(mem,n->next->sp);
+      s = n->next->sp;
+      // *pte = (PTE_FLAGS(*pte)) | (PA2PTE((uint64)mem)) | (PTE_V);
+      // *pte &= (~PTE_SWAPPED);
+      // addLive(pte, procId, vpn);
       
-  //     acquire(&swapped.lock);
-  //     n->next->refCount -= 1;
-  //     if(n->next->refCount == 0){
-  //       t = n->next->next;
-  //       release(&swapped.lock);
+      break;
+    }
+    else{
+      // printf("procId : %d\n", n->next->procId);
+      n = n->next;
+    }
+  }
+  if(!f){
+    panic("swap not found\n");
+  }
+  acquire(&swapped.lock);
 
-  //       swapfree(n->next->sp);
-  //       swappedListNodeFree(n->next);
-        
-  //       acquire(&swapped.lock);
-  //       n->next = t;
-  //     }
-  //     break;
-  //   }
-  //   else{
-  //     printf("procId : %d\n", n->next->procId);
-  //     n = n->next;
-  //   }
-  // }
-  // if(!f){
-  //   panic("swap not found\n");
-  // }
-  // release(&swapped.lock);
+  n = swapped.list;
+  while(n->next){
+    if(n->next->sp == s){
+      if(s == 0){
+        panic("none should be matched");
+      }
+      pte_t *pte = n->next->pte;
+      *pte = (PTE_FLAGS(*pte)) | (PA2PTE((uint64)mem)) | (PTE_V);
+      *pte &= (~PTE_SWAPPED);
+      struct swappedListNode *t = n->next->next;
+      swappedListNodeFree(t);
+      n->next = t;
+      addLive(pte, procId, vpn);
+      swapDecCount(s);
+      if(swapGetCount(s) == 0){
+        release(&swapped.lock);
+        swapfree(s);
+        acquire(&swapped.lock);
+      }
+    }
+  }
 
-  // printf("swapIn ex\n");
+  release(&swapped.lock);
+
+  printf("swapIn ex\n");
 }
 
-void removeSwap(int procId, int vpn){
+void removeFromSwapped(int procId, int vpn){
   struct swappedListNode *s , *t;
   acquire(&swapped.lock);
   s = swapped.list;
@@ -367,10 +376,13 @@ void removeSwap(int procId, int vpn){
       f = 1;
       t = s->next;
       s->next = t->next;
-      release(&swapped.lock);
-      swapfree(t->sp);
+      swapDecCount(t->sp);
+      if(swapGetCount(t->sp) == 0){
+        release(&swapped.lock);
+        swapfree(t->sp);
+        acquire(&swapped.lock);
+      }
       swappedListNodeFree(t);
-      acquire(&swapped.lock);
       break;
     }
   }

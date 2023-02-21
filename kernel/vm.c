@@ -179,7 +179,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
 // page-aligned. The mappings must exist.
 // Optionally free the physical memory.
 void
-uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
+uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procId)
 {
   // printf("uvmunmap Entry\n");
 
@@ -207,8 +207,8 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       // removePTE(pte);
       uint64 pa = PTE2PA(*pte);
       if(*pte & PTE_SWAPPED){
-        // printf("____________\n");
-        
+        printf("____________\n");
+        removeFromSwapped(procId, VA2VPN(a));
       }
       else{
         removeLive(pte);
@@ -267,13 +267,13 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm, int procI
   for(a = oldsz; a < newsz; a += PGSIZE){
     mem = kalloc();
     if(mem == 0){
-      uvmdealloc(pagetable, a, oldsz);
+      uvmdealloc(pagetable, a, oldsz, procId);
       return 0;
     }
     memset(mem, 0, PGSIZE);
     if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_U|xperm,1 ,procId) != 0){
       kfree(mem);
-      uvmdealloc(pagetable, a, oldsz);
+      uvmdealloc(pagetable, a, oldsz, procId);
       return 0;
     }
   }
@@ -285,14 +285,14 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm, int procI
 // need to be less than oldsz.  oldsz can be larger than the actual
 // process size.  Returns the new process size.
 uint64
-uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
+uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int procId)
 {
   if(newsz >= oldsz)
     return oldsz;
 
   if(PGROUNDUP(newsz) < PGROUNDUP(oldsz)){
     int npages = (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE;
-    uvmunmap(pagetable, PGROUNDUP(newsz), npages, 1);
+    uvmunmap(pagetable, PGROUNDUP(newsz), npages, 1, procId);
   }
 
   return newsz;
@@ -347,11 +347,11 @@ freewalk(pagetable_t pagetable)
 // Free user memory pages,
 // then free page-table pages.
 void
-uvmfree(pagetable_t pagetable, uint64 sz)
+uvmfree(pagetable_t pagetable, uint64 sz, int procId)
 {
   // printf("uvmfree Entry\n");
   if(sz > 0){
-    uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
+    uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1, procId);
   }
   // printf("asdf");
   freewalk(pagetable);
@@ -395,7 +395,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz, int procId)
   return 0;
 
  err:
-  uvmunmap(new, 0, i / PGSIZE, 1);
+  uvmunmap(new, 0, i / PGSIZE, 1, procId);
   return -1;
 }
 

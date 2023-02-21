@@ -102,7 +102,7 @@ int             fork(void);
 int             growproc(int);
 void            proc_mapstacks(pagetable_t);
 pagetable_t     proc_pagetable(struct proc *);
-void            proc_freepagetable(pagetable_t, uint64);
+void            proc_freepagetable(pagetable_t, uint64, int);
 int             kill(int);
 int             killed(struct proc*);
 void            setkilled(struct proc*);
@@ -131,7 +131,8 @@ void            swapin(char *dst_pa, struct swap *src_sp);
 void            swapSetRefCount(struct swap* s, int c);
 void            swapIncCount(struct swap* s);
 void            swapDecCount(struct swap* s);
-
+int             swapGetCount(struct swap* s);
+void            removeFromSwapped(int procId, int vpn);
 
 
 // swtch.S
@@ -190,10 +191,10 @@ int             mappages(pagetable_t, uint64, uint64, uint64, int,int,int);
 pagetable_t     uvmcreate(void);
 void            uvmfirst(pagetable_t, uchar *, uint, int);
 uint64          uvmalloc(pagetable_t, uint64, uint64, int, int);
-uint64          uvmdealloc(pagetable_t, uint64, uint64);
+uint64          uvmdealloc(pagetable_t, uint64, uint64, int);
 int             uvmcopy(pagetable_t, pagetable_t, uint64, int);
-void            uvmfree(pagetable_t, uint64);
-void            uvmunmap(pagetable_t, uint64, uint64, int);
+void            uvmfree(pagetable_t, uint64, int);
+void            uvmunmap(pagetable_t, uint64, uint64, int, int);
 void            uvmclear(pagetable_t, uint64);
 pte_t *         walk(pagetable_t, uint64, int,int);
 uint64          walkaddr(pagetable_t, uint64, int);
