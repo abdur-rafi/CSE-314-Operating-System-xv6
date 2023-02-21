@@ -3,7 +3,9 @@
 #include "user/user.h"
 
 #define SZ 2000
-
+// gives sched lock panic
+// now gives cow failed
+// now gives panic acquire
 void test1(){
     pagestats();
     int a = 5;
@@ -11,15 +13,42 @@ void test1(){
     printf("malloc complete\n");
     for(int i = 0; i < SZ; ++i)
         b[i] = i + 1;
-    sbrk(35 * 4096);
+    sbrk(37 * 4096);
     printf("sbrk done\n");
     printf("a:%d b[%d]:%d\n", a, 5, b[5]);
     pagestats();
     printf("exiting test1\n");
 }
-
+// gives sched lock panic
+void test2(){
+    pagestats();
+    int a = 5;
+    int *b =(int*) malloc(SZ * sizeof(int));
+    printf("malloc complete\n");
+    for(int i = 0; i < SZ; ++i)
+        b[i] = i + 1;
+    sbrk(39 * 4096);
+    printf("sbrk done\n");
+    printf("a:%d b[%d]:%d\n", a, 5, b[5]);
+    pagestats();
+    printf("exiting test1\n");
+}
+void test3(){
+    // pagestats();
+    int b[200];
+    for(int i = 0; i < 200; ++i)
+        b[i] = i + 1;
+    sbrk(45 * 4096);
+    if(fork() == 0){
+        printf("=============================from child %d==============\n", b[0]);
+    }
+    else{
+        wait(0);
+        printf("================from parent===================\n");
+    }
+}
 int main(){
-    test1();
+    test2();
     // printf("hello world");
     // pagestats();
     // int a = 5;

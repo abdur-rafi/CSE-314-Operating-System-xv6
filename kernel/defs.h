@@ -76,7 +76,7 @@ int             getLiveCount();
 void            removePTE(pte_t *);
 void            removeLive(pte_t* );
 void            swapIn(int vpn, int procId, uint64 *pte);
-
+void            swapListSize();
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
@@ -192,7 +192,7 @@ pagetable_t     uvmcreate(void);
 void            uvmfirst(pagetable_t, uchar *, uint, int);
 uint64          uvmalloc(pagetable_t, uint64, uint64, int, int);
 uint64          uvmdealloc(pagetable_t, uint64, uint64, int);
-int             uvmcopy(pagetable_t, pagetable_t, uint64, int);
+int             uvmcopy(pagetable_t, pagetable_t, uint64, int, int);
 void            uvmfree(pagetable_t, uint64, int);
 void            uvmunmap(pagetable_t, uint64, uint64, int, int);
 void            uvmclear(pagetable_t, uint64);

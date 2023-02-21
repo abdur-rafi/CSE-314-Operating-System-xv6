@@ -124,8 +124,11 @@ walkaddr(pagetable_t pagetable, uint64 va, int procId)
     return 0;
   
   if((*pte & PTE_V) == 0){
-    printf("=====================");
-    return 0;
+    if(*pte & PTE_SWAPPED){
+      swapIn(VA2VPN(va), procId, pte);
+    }
+    else
+      return 0;
   }
   if((*pte & PTE_U) == 0)
     return 0;
@@ -207,7 +210,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procI
       // removePTE(pte);
       uint64 pa = PTE2PA(*pte);
       if(*pte & PTE_SWAPPED){
-        printf("____________\n");
+        printf("_______ ad _____\n");
         removeFromSwapped(procId, VA2VPN(a));
       }
       else{
@@ -366,7 +369,7 @@ uvmfree(pagetable_t pagetable, uint64 sz, int procId)
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz, int procId)
+uvmcopy(pagetable_t old, pagetable_t new, uint64 sz,int oldProcId, int newProcId)
 {
   pte_t *pte;
   uint64 pa, i;
@@ -375,8 +378,14 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz, int procId)
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0,0)) == 0)
       panic("uvmcopy: pte should exist");
-    if((*pte & PTE_V) == 0)
+  
+  if((*pte & PTE_V) == 0){
+    if(*pte & PTE_SWAPPED){
+      swapIn(VA2VPN(i),oldProcId, pte);
+    }
+    else
       panic("uvmcopy: page not present");
+  }
     
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
@@ -385,7 +394,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz, int procId)
       flags &= (~PTE_W);
     }
     *pte = PA2PTE(pa) | flags;
-    if(mappages(new, i, PGSIZE, (uint64)pa, flags,1, procId) != 0){
+    if(mappages(new, i, PGSIZE, (uint64)pa, flags,1, newProcId) != 0){
       // kfree(mem);
       goto err;
     }
@@ -395,7 +404,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz, int procId)
   return 0;
 
  err:
-  uvmunmap(new, 0, i / PGSIZE, 1, procId);
+  uvmunmap(new, 0, i / PGSIZE, 1, newProcId);
   return -1;
 }
 
@@ -418,6 +427,7 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
 {
+  // printf("==================================\n");
   if(dstva >= MAXVA)
     return -1;
   uint64 n, va0, pa0;
@@ -433,6 +443,9 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
 
     pte = walk(pagetable, va0,0, 0);
     uint64 flags = PTE_FLAGS(*pte);
+    if((flags & PTE_SWAPPED)){
+      printf("__________________________________");
+    }
     if((flags & PTE_COW)){
       uint64 flags = PTE_FLAGS(*pte);
       flags |= (PTE_W);
@@ -534,9 +547,23 @@ int assignPagesOnWrite(pagetable_t p, int procId){
   pte_t *pte = walk(p,va,0,0);
   if(pte == 0) return 0;
   uint64 flags = PTE_FLAGS(*pte);
+  // printf("pid: %d vpn: %d swappedbit: %d\n", procId, VA2VPN(va), (*pte) & PTE_SWAPPED);
+
   if(!(flags & (PTE_COW))){
+    swapListSize();
+    // printf("pid: %d vpn: %d swappedbit: %d\n", procId, VA2VPN(va), (*pte) & PTE_SWAPPED);
+    printf("cow bit not set\n");
     return 0;
   }
+  // printf("valid1: %d\n",(*pte & PTE_V));
+  // printf("swappedf: %d\n", *pte & (PTE_SWAPPED | PTE_V));
+  if(flags & PTE_SWAPPED){
+    swapIn(VA2VPN(va),procId, pte);
+  }
+
+  // printf("valid2: %d\n",(*pte & PTE_V));
+  flags = PTE_FLAGS(*pte);
+
   char *mem = kalloc();
   if(mem == 0){
     return 0;
@@ -546,6 +573,7 @@ int assignPagesOnWrite(pagetable_t p, int procId){
   decRefCount(PTE2PPN(*pte));
   flags |= PTE_W;
   flags &= ~PTE_COW;
+  // printf("vpn: %d\n",VA2VPN(va));
   removeLive(pte);
   *pte = PA2PTE(mem) | flags;
   addLive(pte, procId, VA2VPN(va));
@@ -554,14 +582,15 @@ int assignPagesOnWrite(pagetable_t p, int procId){
 }
 
 int getSwappedPage(pagetable_t p, int procId){
+  // printf("pid: %d\n", procId);
   uint64 va = r_stval();
   if(va >= MAXVA) return 0;
   pte_t *pte = walk(p,va,0,0);
   if(pte == 0) return 0;
   int vpn = VA2VPN(va);
   // uint64 flags = PTE_FLAGS(*pte);
+  // printf("swap flags: %d vpn: %d\n", (flags & PTE_SWAPPED), vpn);
   swapIn(vpn, procId, pte);
-  // printf("swap flag: %d %d\n", flags & PTE_SWAPPED, vpn);
 
   return 1;
 }

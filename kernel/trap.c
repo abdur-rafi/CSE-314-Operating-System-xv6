@@ -70,17 +70,25 @@ usertrap(void)
   } else {
     int handled = 0;
     if(r_scause() == 0x0f){
+      printf("handling cow fault\n");
       handled = assignPagesOnWrite(p->pagetable, p->pid);
       if(!handled){
         printf("usertrap(): cow failed\n");
         setkilled(p);
       }
+      else 
+        printf("cow fault handled\n");
+        
     }
     else if(r_scause() == 0x0c){
+      printf("handling page fault\n");
       if(getSwappedPage(p->pagetable, p->pid) == 0){
         printf("usertrap(): swap failed\n");
         setkilled(p);
       }
+      else
+        printf("page fault handled\n");
+
     }
     else{
       printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
@@ -155,6 +163,11 @@ kerneltrap()
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
+
+  // if(scause == 0x0d){
+  //   uint64 va = r_stval();
+  //   // printf("%d")
+  // }
   
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
