@@ -209,8 +209,10 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procI
     if(do_free){
       // removePTE(pte);
       uint64 pa = PTE2PA(*pte);
-      if(*pte & PTE_SWAPPED){
+      if((*pte) & PTE_SWAPPED){
         printf("_______ ad _____\n");
+        getLiveCount();
+        printf("%d %d\n", procId, VA2VPN(a));
         removeFromSwapped(procId, VA2VPN(a));
       }
       else{
@@ -369,7 +371,7 @@ uvmfree(pagetable_t pagetable, uint64 sz, int procId)
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz,int oldProcId, int newProcId)
+uvmcopy(pagetable_t old, pagetable_t new, uint64 sz,int oldProcId, int newProcId, struct spinlock* lk)
 {
   pte_t *pte;
   uint64 pa, i;
@@ -381,7 +383,12 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz,int oldProcId, int newProcId
   
   if((*pte & PTE_V) == 0){
     if(*pte & PTE_SWAPPED){
-      swapIn(VA2VPN(i),oldProcId, pte);
+      // printf("re\n");
+      // release(lk);
+      // printf("--------------swapin en -------------\n");
+      // swapIn(VA2VPN(i),oldProcId, pte);
+      // printf("--------------swapin ex -------------\n");
+      // acquire(lk);
     }
     else
       panic("uvmcopy: page not present");

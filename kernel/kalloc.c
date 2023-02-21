@@ -302,6 +302,10 @@ void swapListSize(){
   release(&swapped.lock);
 }
 
+void addSwapped(pte_t *pte, int procId, int vpn){
+  
+}
+
 void swapIn(int vpn, int procId, uint64 *pte){
 
   // release space
@@ -411,9 +415,11 @@ void removeFromSwapped(int procId, int vpn){
       swappedListNodeFree(t);
       break;
     }
+    else
+      s = s->next;
   }
   if(!f){
-    panic("swap not founc\n");
+    panic("swap not found\n");
   }
   release(&swapped.lock);
 }
@@ -518,7 +524,7 @@ int getLiveCount(){
   acquire(&live.lock);
   n = live.list->next;
   while(n != 0){
-    // printf("n->procId : %d vpn: %d\n", n->procId, n->vpn);
+    printf("n->procId : %d vpn: %d\n", n->procId, n->vpn);
     n = n->next;
     ++c;
   }
