@@ -91,6 +91,7 @@ sys_uptime(void)
 }
 
 void sys_pagestats(void){
+  printf("===================== PAGESTATS ==================\n");
   printf("free pages: %d\n",freePageCountFromFreeList());
   printf("free pages from refCount: %d\n",freePageCountFromRefCount());
   pageCountOfProcs();

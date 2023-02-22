@@ -211,9 +211,9 @@ void swapOut(struct liveListNode* n){
   if(s == 0){
     panic("swap not allocated");
   }
-  printf("swapout en\n");
+  // printf("swapout en\n");
   swapout(s,(char*) PTE2PA(*n->pte));
-  printf("swapout ex\n");
+  // printf("swapout ex\n");
   
   int rc = 0;
 
@@ -368,7 +368,7 @@ void swapIn(int vpn, int procId, uint64 *pte){
       release(&swapped.lock);
       mem =(char *) kalloc();
       // printf("%d\n",swapGetCount(n->next->sp));
-      printf("swapin en\n");
+      // printf("swapin en\n");
       if(n->next->sp == 0){
         panic("sp 0\n");
       }

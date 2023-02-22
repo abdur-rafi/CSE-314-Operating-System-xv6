@@ -73,61 +73,29 @@ void pingpong()
     pagestats();
 
 }
-
-
-// int oneStep(int fileDescriptor){
-//     int r, ret, currPrime;
-//     ret = read(fileDescriptor, &r, 4);
-//     if(ret != 0){
-//         printf("prime: %d\n", r);
-//         currPrime = r;
-//         int p[2];
-//         pipe(p);
-
-//         if(fork() == 0){
-//             close(p[1]);
-//             close(fileDescriptor);
-//             oneStep(p[0]);
-//             close(p[0]);
-//         }
-//         else{
-//             close(p[0]);
-//             while(read(fileDescriptor, &r, 4) != 0){
-//                 if(r % currPrime != 0){
-//                     write(p[1], &r, 4);
-//                 }
-//             }
-//             close(fileDescriptor);
-//             close(p[1]);
-//             wait((int *)0);
-//         }
-//     }
-//     else{
-//         close(fileDescriptor);
-//     }
-
-//     return 0;
-// }
-
-// void prime(){
-
-//     int p[2];
-//     pipe(p);
-//     if(fork() == 0){
-//         close(p[1]);
-//         oneStep(p[0]);
-//     }
-//     else{
-//         close(p[0]);
-//         for(int i = 2; i < 36; ++i){
-//             write(p[1], &i, 4);
-//         }
-//         close(p[1]);
-//         wait((int *)0);
-//         return;
-//     }
-//     exit(0);
-// }
+// throws usertrap cow failed, cow bit not set
+void testCowSwapped(){
+    printf("======================= COW SWAP TEST ==================\n");
+    int a = 4;
+    pagestats();
+    for(int i = 0; i < 50; ++i)
+        sbrk(4096);
+    printf("_______________ sbrk done _________________\n");
+    pagestats();
+    
+    if(fork() == 0){
+        sbrk(-50 * 4096);
+        pagestats();
+        a = 5;
+        printf("ca:%d\n", a);
+        pagestats();
+    }
+    else{
+        wait(0);
+        printf("pa:%d\n", a);
+        pagestats();
+    }
+}
 
 void test1dfs(){
     printf("=============== T-E-S-T-0-1 STARTING ===============\n");
@@ -173,8 +141,9 @@ void test3(){
     }
 }
 int main(){
-    test1();
-    pingpong();
+    // test1();
+    // pingpong();
+    testCowSwapped();
     // printf("hello world");
     // pagestats();
     // int a = 5;

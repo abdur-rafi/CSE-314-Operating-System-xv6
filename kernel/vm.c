@@ -215,7 +215,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procI
       uint64 pa = PTE2PA(*pte);
       if((*pte) & PTE_SWAPPED){
         // printf("_______ ad _____\n");
-        getLiveCount();
+        // getLiveCount();
         // printf("%d %d\n", procId, VA2VPN(a));
         removeFromSwapped(procId, VA2VPN(a));
       }
@@ -554,15 +554,19 @@ int assignPagesOnWrite(pagetable_t p, int procId){
 
   if(!(flags & (PTE_COW))){
     swapListSize();
-    // printf("pid: %d vpn: %d swappedbit: %d\n", procId, VA2VPN(va), (*pte) & PTE_SWAPPED);
+    if((flags & PTE_W) && (flags & PTE_SWAPPED)){
+      swapIn(VA2VPN(va),procId, pte);
+      return 1;
+    }
+    printf("pid: %d vpn: %d swappedbit: %d w:%d\n", procId, VA2VPN(va), (*pte) & PTE_SWAPPED, (*pte) & PTE_W);
     printf("cow bit not set\n");
     return 0;
   }
   // printf("valid1: %d\n",(*pte & PTE_V));
-  // printf("swappedf: %d\n", *pte & (PTE_SWAPPED | PTE_V));
   if(flags & PTE_SWAPPED){
     swapIn(VA2VPN(va),procId, pte);
   }
+  // printf("swappedf: %d\n", *pte & (PTE_SWAPPED | PTE_V));
 
   // printf("valid2: %d\n",(*pte & PTE_V));
   flags = PTE_FLAGS(*pte);
