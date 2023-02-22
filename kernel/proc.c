@@ -689,8 +689,11 @@ void pageCountOfProcs(){
 
   for(p = proc; p < &proc[NPROC]; p++){
     acquire(&p->lock);
+    int sp = 0;
+    int l = 0;
     if(p->state != UNUSED){
-      printf("%d %d %d %d\n", p->pid, pageCount(p->pagetable, 0), p->sz / PGSIZE, p->sz % PGSIZE);
+      pageCount(p->pagetable, 0,&l, &sp);
+      printf("procId: %d livePage :%d swappedPage: %d sz:%d\n", p->pid,l,sp,(p->sz / PGSIZE + p->sz % PGSIZE));
       // Wake process from sleep().
     }
     release(&p->lock);

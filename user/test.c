@@ -2,22 +2,147 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-#define SZ 2000
+#define SZ 200
 // gives sched lock panic
 // now gives cow failed
 // now gives panic acquire
 void test1(){
+    int a = 1;
+    printf("============= TEST 1: WRITE ON COW PAGE ============\n");
+    pagestats();
+    sbrk(10 * 4096);
+    if(fork() == 0){
+        // sbrk(-9 * 4096);
+        if(fork() == 0){
+            sbrk(-10*4096);
+            a = 23;
+        }
+        else{
+            wait(0);
+            sbrk(10 * 4096);
+            if(fork()!=0){
+                a = 123;
+                wait(0);
+            }
+            else{
+                a = 55;
+            }
+            sbrk(-10 * 4096);
+        }
+        a = 2;
+        int c = 1;
+        printf("From child\na: %d c: %d\n", a, c);
+    }
+    else{
+        sbrk(-9 * 4096);
+        wait(0);
+        a = 3;
+        int c = 2;
+        printf("From parent\na: %d c: %d\n", a, c);
+        printf("Live page count should increase by 1\n");
+        printf("Free page count should decrease by 1\n");
+        pagestats();
+        return;
+    }
+    exit(0);
+
+}
+
+void pingpong()
+{
+    printf("============== PING PONG TEST ================\n");
+    int p1[2], p2[2];
+    // p1 -> parent to child
+    // p2 -> child to parent
+    pipe(p1);
+    pipe(p2);
+    pagestats();
+    char message[30] = {0};
+    if(fork() == 0){
+        read(p1[0], message, 29);
+        printf("%d: received ping %s\n",getpid(), message);
+        write(p2[1], "hello from child",15);
+        exit(0);
+    }
+    else{
+        write(p1[1], "hello from parent",17);
+        read(p2[0], message, 29);
+        printf("%d: received pong %s\n",getpid(),message);
+        wait(0);
+    }
+    pagestats();
+
+}
+
+
+// int oneStep(int fileDescriptor){
+//     int r, ret, currPrime;
+//     ret = read(fileDescriptor, &r, 4);
+//     if(ret != 0){
+//         printf("prime: %d\n", r);
+//         currPrime = r;
+//         int p[2];
+//         pipe(p);
+
+//         if(fork() == 0){
+//             close(p[1]);
+//             close(fileDescriptor);
+//             oneStep(p[0]);
+//             close(p[0]);
+//         }
+//         else{
+//             close(p[0]);
+//             while(read(fileDescriptor, &r, 4) != 0){
+//                 if(r % currPrime != 0){
+//                     write(p[1], &r, 4);
+//                 }
+//             }
+//             close(fileDescriptor);
+//             close(p[1]);
+//             wait((int *)0);
+//         }
+//     }
+//     else{
+//         close(fileDescriptor);
+//     }
+
+//     return 0;
+// }
+
+// void prime(){
+
+//     int p[2];
+//     pipe(p);
+//     if(fork() == 0){
+//         close(p[1]);
+//         oneStep(p[0]);
+//     }
+//     else{
+//         close(p[0]);
+//         for(int i = 2; i < 36; ++i){
+//             write(p[1], &i, 4);
+//         }
+//         close(p[1]);
+//         wait((int *)0);
+//         return;
+//     }
+//     exit(0);
+// }
+
+void test1dfs(){
+    printf("=============== T-E-S-T-0-1 STARTING ===============\n");
     pagestats();
     int a = 5;
     int *b =(int*) malloc(SZ * sizeof(int));
     printf("malloc complete\n");
     for(int i = 0; i < SZ; ++i)
         b[i] = i + 1;
-    sbrk(37 * 4096);
+    sbrk(38 * 4096);
     printf("sbrk done\n");
     printf("a:%d b[%d]:%d\n", a, 5, b[5]);
     pagestats();
-    printf("exiting test1\n");
+    printf("=============== T-E-S-T-0-1 ENDING ===============\n");
+
 }
 // gives sched lock panic
 void test2(){
@@ -48,7 +173,8 @@ void test3(){
     }
 }
 int main(){
-    test2();
+    test1();
+    pingpong();
     // printf("hello world");
     // pagestats();
     // int a = 5;

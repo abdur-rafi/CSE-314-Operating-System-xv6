@@ -168,7 +168,11 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
     if(enq){
-      addLive(pte, procId, VA2VPN(a));
+      if(*pte & PTE_SWAPPED){
+        addSwapped(pte, enq, procId, VA2VPN(a));
+      }
+      else
+        addLive(pte, procId, VA2VPN(a));
     }    
     if(a == last)
       break;
@@ -210,9 +214,9 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procI
       // removePTE(pte);
       uint64 pa = PTE2PA(*pte);
       if((*pte) & PTE_SWAPPED){
-        printf("_______ ad _____\n");
+        // printf("_______ ad _____\n");
         getLiveCount();
-        printf("%d %d\n", procId, VA2VPN(a));
+        // printf("%d %d\n", procId, VA2VPN(a));
         removeFromSwapped(procId, VA2VPN(a));
       }
       else{
@@ -303,30 +307,22 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int procId)
   return newsz;
 }
 
-int pageCount(pagetable_t pagetable, int level){
-  int c = 0;
+void pageCount(pagetable_t pagetable, int level, int* livePageCount, int* swappedPageCount){
   for(int i = 0; i < 512; i++){
     pte_t pte = pagetable[i];
     if(pte & PTE_V){
       if(level == 2){
-        c++;
+        *livePageCount += 1;
       }
       else{
         uint64 child = PTE2PA(pte);
-        c += pageCount((pagetable_t)child, level + 1);
-        // if(level > 0)
-        //   ++c;
+        pageCount((pagetable_t)child, level + 1, livePageCount, swappedPageCount);
       }
     }
-    // if((pte & PTE_V) && (pte & (PTE_R|PTE_W|PTE_X)) == 0){
-    //   uint64 child = PTE2PA(pte);
-    //   c += pageCount((pagetable_t)child, 0);
-    // } else if(pte & PTE_V){
-    //   ++c;
-    //   // panic("freewalk: leaf");
-    // }
+    else if(pte & PTE_SWAPPED){
+      *swappedPageCount += 1;
+    }
   }
-  return c;
 }
 
 // Recursively free page-table pages.
@@ -401,7 +397,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz,int oldProcId, int newProcId
       flags &= (~PTE_W);
     }
     *pte = PA2PTE(pa) | flags;
-    if(mappages(new, i, PGSIZE, (uint64)pa, flags,1, newProcId) != 0){
+    if(mappages(new, i, PGSIZE, (uint64)pa, flags,oldProcId, newProcId) != 0){
       // kfree(mem);
       goto err;
     }

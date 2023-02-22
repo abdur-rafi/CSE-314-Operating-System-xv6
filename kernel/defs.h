@@ -69,8 +69,8 @@ void            kinit(void);
 void            incRefCount(uint64 ppn);
 void            decRefCount(uint64 ppn);
 int             getRefCount(uint64 ppn);
-int             pagestats();
-int             pagestatsFromRefCount();
+int             freePageCountFromFreeList();
+int             freePageCountFromRefCount();
 void            addLive(pte_t *pte, int procId, int vpn);
 int             getLiveCount();
 void            removePTE(pte_t *);
@@ -202,8 +202,11 @@ int             copyout(pagetable_t, uint64, char *, uint64, int);
 int             copyin(pagetable_t, char *, uint64, uint64, int);
 int             copyinstr(pagetable_t, char *, uint64, uint64, int);
 int             assignPagesOnWrite(pagetable_t p, int);
-int             pageCount(pagetable_t, int);
+void            pageCount(pagetable_t, int, int*, int*);
 int             getSwappedPage(pagetable_t p, int procId);
+void            addSwapped(pte_t *pte, int oldProcId, int newProcId, int vpn);
+void            swapListSize();
+
 // plic.c
 void            plicinit(void);
 void            plicinithart(void);
