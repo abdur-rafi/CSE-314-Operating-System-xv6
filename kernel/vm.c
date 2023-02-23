@@ -167,7 +167,12 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
     if(*pte & PTE_V)
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
+    
     if(enq){
+      if(!(*pte & PTE_U)){
+        printf("issue");
+      }
+      // printf("%d\n", *pte & PTE_U);
       if(*pte & PTE_SWAPPED){
         addSwapped(pte, enq, procId, VA2VPN(a));
       }
@@ -430,7 +435,6 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
 {
-  // printf("==================================\n");
   if(dstva >= MAXVA)
     return -1;
   uint64 n, va0, pa0;

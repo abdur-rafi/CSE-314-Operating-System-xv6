@@ -143,7 +143,7 @@ void test3(){
 int main(){
     // test1();
     // pingpong();
-    testCowSwapped();
+    // testCowSwapped();
     // printf("hello world");
     // pagestats();
     // int a = 5;
