@@ -96,6 +96,39 @@ void testCowSwapped(){
         pagestats();
     }
 }
+void testSwapped(){
+    int a = 20;
+    printf("======================= SWAP TEST ==================\n");
+    pagestats();
+    for(int i = 0; i < 56; ++i)
+        sbrk(4096);
+    pagestats();
+    a = 25;
+    // sbrk(-20 * 4096);
+    printf("a: %d\n", a);
+
+}
+
+void testFork(){
+    int a = 5;
+    for(int i = 0; i < 56; ++i)
+        sbrk(4096);
+    fork();
+    printf("a:%d\n", a);
+}
+
+void testFork2(){
+    int a = 5;
+    // for(int i = 0; i < 50; ++i)
+    //     sbrk(4096);
+    sbrk(50 * 4096);
+    // printf("========================================================================================================sbrk done\n");
+    fork();
+    // pagestats();
+    printf("a:%d\n", a);
+    printf("========================================================================================================test done\n");
+
+}
 
 void test1dfs(){
     printf("=============== T-E-S-T-0-1 STARTING ===============\n");
@@ -143,7 +176,19 @@ void test3(){
 int main(){
     // test1();
     // pingpong();
+    // testSwapped();
     // testCowSwapped();
+    // testFork2();
+    int a = 5;
+    // for(int i = 0; i < 50; ++i)
+    //     sbrk(4096);
+    sbrk(50 * 4096);
+    // printf("========================================================================================================sbrk done\n");
+    fork();
+    // pagestats();
+    printf("a:%d\n", a);
+    printf("========================================================================================================test done\n");
+    
     // printf("hello world");
     // pagestats();
     // int a = 5;

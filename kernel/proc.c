@@ -259,6 +259,7 @@ userinit(void)
 int
 growproc(int n)
 {
+  printf("grow proc en\n");
   uint64 sz;
   struct proc *p = myproc();
 
@@ -271,6 +272,8 @@ growproc(int n)
     sz = uvmdealloc(p->pagetable, sz, sz + n, p->pid);
   }
   p->sz = sz;
+  printf("grow proc ex\n");
+
   return 0;
 }
 

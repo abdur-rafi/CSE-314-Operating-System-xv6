@@ -80,7 +80,7 @@ usertrap(void)
       //   printf("cow fault handled\n");
         
     }
-    else if(r_scause() == 0x0c){
+    else if(r_scause() == 0x0c || r_scause() == 0x0d){
       // printf("handling page fault\n");
       if(getSwappedPage(p->pagetable, p->pid) == 0){
         printf("usertrap(): swap failed\n");

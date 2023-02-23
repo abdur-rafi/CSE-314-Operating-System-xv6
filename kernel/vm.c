@@ -169,9 +169,9 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
     *pte = PA2PTE(pa) | perm | PTE_V;
     
     if(enq){
-      if(!(*pte & PTE_U)){
-        printf("issue");
-      }
+      // if(!(*pte & PTE_U)){
+      //   printf("issue");
+      // }
       // printf("%d\n", *pte & PTE_U);
       if(*pte & PTE_SWAPPED){
         addSwapped(pte, enq, procId, VA2VPN(a));
