@@ -27,7 +27,6 @@ main()
     swapinit();
     binit();         // buffer cache
     iinit();         // inode table
-    // printf("ok");
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk
     userinit();      // first user process

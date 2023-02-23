@@ -235,6 +235,7 @@ userinit(void)
   struct proc *p;
 
   p = allocproc();
+  release(&p->lock);
   initproc = p;
   
   // allocate one user page and copy initcode's instructions
@@ -249,6 +250,7 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  acquire(&p->lock);
   p->state = RUNNABLE;
 
   release(&p->lock);
@@ -259,7 +261,7 @@ userinit(void)
 int
 growproc(int n)
 {
-  printf("grow proc en\n");
+  // printf("grow proc en\n");
   uint64 sz;
   struct proc *p = myproc();
 
@@ -272,7 +274,7 @@ growproc(int n)
     sz = uvmdealloc(p->pagetable, sz, sz + n, p->pid);
   }
   p->sz = sz;
-  printf("grow proc ex\n");
+  // printf("grow proc ex\n");
 
   return 0;
 }
@@ -291,6 +293,7 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
+  release(&np->lock);
 
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz,p->pid, np->pid, &p->lock) < 0){
@@ -298,6 +301,7 @@ fork(void)
     release(&np->lock);
     return -1;
   }
+  acquire(&np->lock);
   np->sz = p->sz;
 
   // copy saved user registers.
@@ -418,9 +422,9 @@ wait(uint64 addr)
             release(&wait_lock);
             return -1;
           }
-          freeproc(pp);
           release(&pp->lock);
           release(&wait_lock);
+          freeproc(pp);
           return pid;
         }
         release(&pp->lock);
@@ -539,6 +543,7 @@ forkret(void)
 void
 sleep(void *chan, struct spinlock *lk)
 {
+  // printf("here\n");
   struct proc *p = myproc();
   
   // Must acquire p->lock in order to
@@ -570,6 +575,9 @@ sleep(void *chan, struct spinlock *lk)
 void
 wakeup(void *chan)
 {
+  // if(myproc() != 0 && holding(&myproc()->lock) ){
+  //   release(&myproc()->lock);
+  // }
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -701,4 +709,13 @@ void pageCountOfProcs(){
     }
     release(&p->lock);
   }
+}
+
+void releaseLock(){
+  printf("asdf");
+  release(&myproc()->lock);
+  printf("asdf");
+}
+void acquireLock(){
+  acquire(&myproc()->lock);
 }

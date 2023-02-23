@@ -1,3 +1,4 @@
+struct sleeplock;
 struct buf;
 struct context;
 struct file;
@@ -5,7 +6,6 @@ struct inode;
 struct pipe;
 struct proc;
 struct spinlock;
-struct sleeplock;
 struct stat;
 struct superblock;
 struct swap;
@@ -71,7 +71,7 @@ void            decRefCount(uint64 ppn);
 int             getRefCount(uint64 ppn);
 int             freePageCountFromFreeList();
 int             freePageCountFromRefCount();
-void            addLive(pte_t *pte, int procId, int vpn);
+void            addLive(pte_t *pte, int procId, int vpn, int);
 int             getLiveCount();
 void            removePTE(pte_t *);
 void            removeLive(pte_t* );
@@ -120,8 +120,9 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
-void             pageCountOfProcs();
-
+void            pageCountOfProcs();
+void            releaseLock();
+void            acquireLock();
 // swap.c
 void            swapinit(void);
 void            swapfree(struct swap*);
@@ -132,7 +133,7 @@ void            swapSetRefCount(struct swap* s, int c);
 void            swapIncCount(struct swap* s);
 void            swapDecCount(struct swap* s);
 int             swapGetCount(struct swap* s);
-void            removeFromSwapped(int procId, int vpn);
+void            removeFromSwapped(int procId, int vpn, pte_t*);
 
 
 // swtch.S

@@ -281,7 +281,10 @@ virtio_disk_rw(struct buf *b, int write)
 
   // Wait for virtio_disk_intr() to say request has finished.
   while(b->disk == 1) {
+    // printf("sleeping in\n");
     sleep(b, &disk.vdisk_lock);
+    // printf("sleeping out\n");
+
   }
 
   disk.info[idx[0]].b = 0;

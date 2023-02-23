@@ -175,9 +175,20 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
       // printf("%d\n", *pte & PTE_U);
       if(*pte & PTE_SWAPPED){
         addSwapped(pte, enq, procId, VA2VPN(a));
+        
       }
-      else
-        addLive(pte, procId, VA2VPN(a));
+      else{
+        // printf("id:%d\n", procId );
+        // if(procId > 1){
+        //   // releaseLock();
+        // }
+        // printf("procId : %d\n", procId);
+        addLive(pte, procId, VA2VPN(a), procId - 1);
+        // if(procId > 1){
+        //   acquireLock();
+        // }
+        // printf("ok\n");
+      }
     }    
     if(a == last)
       break;
@@ -222,7 +233,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procI
         // printf("_______ ad _____\n");
         // getLiveCount();
         // printf("%d %d\n", procId, VA2VPN(a));
-        removeFromSwapped(procId, VA2VPN(a));
+        removeFromSwapped(procId, VA2VPN(a), pte);
       }
       else{
         removeLive(pte);
@@ -261,6 +272,7 @@ uvmfirst(pagetable_t pagetable, uchar *src, uint sz, int procId)
   if(sz >= PGSIZE)
     panic("uvmfirst: more than a page");
   mem = kalloc();
+
   memset(mem, 0, PGSIZE);
   mappages(pagetable, 0, PGSIZE, (uint64)mem, PTE_W|PTE_R|PTE_X|PTE_U,1, procId);
   memmove(mem, src, sz);
@@ -452,6 +464,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
     uint64 flags = PTE_FLAGS(*pte);
     if((flags & PTE_SWAPPED)){
       printf("__________________________________");
+      panic("handle this\n");
     }
     if((flags & PTE_COW)){
       uint64 flags = PTE_FLAGS(*pte);
@@ -464,7 +477,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
       pa0 = (uint64) mem;
       removeLive(pte);
       *pte = PA2PTE(pa0) | flags;
-      addLive(pte, procId, VA2VPN(va0));
+      addLive(pte, procId, VA2VPN(va0), 1);
       // enqueue(pte);
     }
     memmove((void *)(pa0 + (dstva - va0)), src, n);
@@ -587,7 +600,7 @@ int assignPagesOnWrite(pagetable_t p, int procId){
   // printf("vpn: %d\n",VA2VPN(va));
   removeLive(pte);
   *pte = PA2PTE(mem) | flags;
-  addLive(pte, procId, VA2VPN(va));
+  addLive(pte, procId, VA2VPN(va), 1);
   // enqueue(pte);
   return 1;
 }
@@ -605,3 +618,6 @@ int getSwappedPage(pagetable_t p, int procId){
 
   return 1;
 }
+
+      // releasesleep(&slock);
+      // acquiresleep(&slock);

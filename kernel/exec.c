@@ -30,7 +30,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
-  // printf("p1: %d\n",p->pid);
+  printf("\n\np1: %d\n",p->pid);
   begin_op();
 
   if((ip = namei(path)) == 0){

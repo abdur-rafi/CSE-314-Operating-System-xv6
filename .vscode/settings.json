@@ -6,6 +6,8 @@
         "proc.h": "c",
         "exception": "c",
         "new": "c",
-        "cstdio": "c"
+        "cstdio": "c",
+        "sleeplock.h": "c",
+        "param.h": "c"
     }
 }

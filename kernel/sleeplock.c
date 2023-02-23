@@ -37,7 +37,9 @@ releasesleep(struct sleeplock *lk)
   acquire(&lk->lk);
   lk->locked = 0;
   lk->pid = 0;
+  // printf("ok1\n");
   wakeup(lk);
+  // printf("ok2\n");
   release(&lk->lk);
   // printf("release sleep ex\n");
 
