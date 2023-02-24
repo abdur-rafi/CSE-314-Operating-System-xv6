@@ -183,25 +183,78 @@ void test3(){
 //     // // printf("a:%d\n", a);
 
 //     pagestats();
+
+//  gives panic swap in : swap not found
+    // sbrk(50 * 4096);
+    // // pagestats();
+    // printf("==========================================\n");
+    // if(fork()){
+    //     wait(0);
+    //     fork();
+    //     wait(0);
+    //     sbrk(80 * 4096);
+    //     a = 23;
+    // };
+    // printf("a:%d\n", a);
+
+// CPU 3 gives swap in not found error
+// sbrk(50 * 4096);
+//     // pagestats();
+//     printf("==========================================\n");
+//     if(fork()){
+//         // wait(0);
+//         fork();
+//         a = 55;
+//         // wait(0);
+//         sbrk(80 * 4096);
+//         a = 23;
+//     };
+//     printf("a:%d\n", a);
+
+    // sbrk(50 * 4096);
+    // // pagestats();
+    // printf("==========================================\n");
+    // if(fork()){
+    //     // wait(0);
+    //     fork();
+    //     a = 55;
+    //     // wait(0);
+    //     sbrk(80 * 4096);
+    //     a = 23;
+    // };
+    // printf("a:%d\n", a);
+
 int main(){
     // test1();
     // pingpong();
     // testSwapped();
     // testCowSwapped();
     // testFork2();
-    int a = 5;
-    // sbrk(100 * 4096);
+    int a = 123123;
+    sbrk(100 * 4096);
     // for(int i = 0; i < 100; ++i)
     //     sbrk(4096);
-    sbrk(50 * 4096);
-    pagestats();
-    printf("==========================================\n");
-    if(fork()){
-        wait(0);
-    };
+    // sbrk(100 * 4096);
+    // pagestats();
+    // printf("==========================================\n");
+    // if(fork()){
+    //     // wait(0);
+    //     fork();
+    //     a = 55;
+    //     // wait(0);
+    //     sbrk(80 * 4096);
+    //     a = 23;
+    // };
+    // if(fork() != 0){
+    //     printf("fork parent\n");
+    //     // wait(0);
+    // }
+    // fork();
+    // fork();
+    // pagestats();
     printf("a:%d\n", a);
 
-    pagestats();
+    // pagestats();
     // printf("========================================================================================================test done\n");
     
     // printf("hello world");

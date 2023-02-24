@@ -20,6 +20,8 @@ void kfree2(void *pa);
 void removeLast();
 void swapListSize();
 
+int debug = 0;
+
 struct sleeplock slock;
 struct run {
   struct run *next;
@@ -212,7 +214,7 @@ void swappedListInit(){
   }
 }
 void swapOut(struct liveListNode* n){
-  // printf("swapOut en\n");
+  printf("swapOut en\n");
   if(n == 0){
     panic("null pointer to swap");
   }
@@ -220,11 +222,11 @@ void swapOut(struct liveListNode* n){
   if(s == 0){
     panic("swap not allocated");
   }
-  printf("swapout en\n");
+  // printf("swapout en\n");
       // releasesleep(&slock);
   swapout(s,(char*) PTE2PA(*n->pte));
       // acquiresleep(&slock);
-  printf("swapout ex\n");
+  // printf("swapout ex\n");
   
   int rc = 0;
 
@@ -238,10 +240,12 @@ void swapOut(struct liveListNode* n){
   }
   // struct liveListNode* found;
   while(l->next){
+    
     int lppn = PTE2PPN(*l->next->pte);
     if(removedPpn == lppn){
-      // if(l->next->procId == 4 && l->next->vpn == 9){
-      //   panic("asdf");
+    
+      // if(l->next->procId == 3 && l->next->vpn == 0){
+      //   printf("--------\n\n");
       // }
       // printf("========\n");
       f = 1;
@@ -267,6 +271,9 @@ void swapOut(struct liveListNode* n){
       }
       sn->next = swapped.list->next;
       swapped.list->next = sn;
+      // if(sn->procId == 3 && sn->vpn == 0){
+      //   printf("\n\nswapped\n\n");
+      // }
       // swapListSize();
       // acquire(&live.lock);
       struct liveListNode* t = l->next->next;
@@ -294,6 +301,7 @@ void swapOut(struct liveListNode* n){
   live.count[removedPpn] = 0;
   live.liveCount--;
   
+  // printf("rc: %d s: %p\n", rc, s);
   swapSetRefCount(s, rc);
   // releasesleep(&live.slock);
 
@@ -311,7 +319,7 @@ void swapOut(struct liveListNode* n){
   kfree2((void*) PPN2PA(removedPpn));
   // issue
 
-  // printf("swapOut ex\n");
+  printf("swapOut ex\n");
 }
 
 void swapListSize(){
@@ -322,7 +330,8 @@ void swapListSize(){
   int c = 0;
   printf("=============swap list stats============\n");
   while(s->next){
-    // printf("pid->%d vpn->%d\n", s->next->procId, s->next->vpn);
+    if(debug)
+      printf("pid->%d vpn->%d ppn:%d sp:%p\n", s->next->procId, s->next->vpn, PTE2PPN(*s->next->pte), s->next->sp);
     ++c;
     s = s->next;
   }
@@ -332,9 +341,9 @@ void swapListSize(){
 }
 
 void addSwapped(pte_t *pte, int oldProcId, int newProcId, int vpn){
-  // printf("addswap en\n");
+  printf("addswap en\n");
   acquiresleep(&slock);
-  printf("%d %d %d\n",oldProcId, newProcId, vpn);
+  // printf("%d %d %d\n",oldProcId, newProcId, vpn);
   struct swappedListNode* new = swappedListNodeAlloc();
   if(new == 0){
     panic("swapped node alloc");
@@ -369,20 +378,28 @@ void addSwapped(pte_t *pte, int oldProcId, int newProcId, int vpn){
   new->next = swapped.list->next;
   swapped.list->next = new;
   // release(&swapped.lock);
-  // printf("addswap ex\n");
+  printf("addswap ex\n");
   releasesleep(&slock);
 }
 
 void swapIn(int vpn, int procId, uint64 *pte){
+  // printf("valid:%d\n", *pte & PTE_V);
   acquiresleep(&slock);
 
   // release space
-  // printf("swapIn en\n");
+  printf("swapIn en\n");
+  // printf("vpn %d procId %d\n", vpn, procId);
   // acquire(&live.lock);
   while(live.liveCount >= MAX_LIVE_PAGE){
     // release(&live.lock);
     removeLast();
     // acquire(&live.lock);
+  }
+  if(*pte & PTE_V){
+    printf("vpn: %d pId %d\n", procId, vpn);
+    panic("valid\n");
+    // printf("here\n")
+    return;
   }
   // release(&live.lock);
   // swapListSize();
@@ -399,18 +416,19 @@ void swapIn(int vpn, int procId, uint64 *pte){
   while(n->next){
     // printf("%d %d %d\n",procId, n->next->procId, n->next->vpn);
     if(n->next->procId == procId && n->next->vpn == vpn){
+      
       f = 1;
       // release(&swapped.lock);
       mem =(char *) kalloc();
       // printf("%d\n",swapGetCount(n->next->sp));
-      printf("swapin en\n");
+      // printf("swapin en\n");
       if(n->next->sp == 0){
         panic("sp 0\n");
       }
       // releasesleep(&slock);
       swapin(mem,n->next->sp);
       // acquiresleep(&slock);
-      printf("swapin ex\n");
+      // printf("swapin ex\n");
       s = n->next->sp;
       break;
     }
@@ -419,6 +437,9 @@ void swapIn(int vpn, int procId, uint64 *pte){
     }
   }
   if(!f){
+    printf("looking for pid : %d vpn : %d\n", procId, vpn);
+    getLiveCount();
+    swapListSize();
     panic("swap in: swap not found\n");
   }
   // acquire(&swapped.lock);
@@ -426,33 +447,42 @@ void swapIn(int vpn, int procId, uint64 *pte){
   n = swapped.list;
   while(n->next){
     if(n->next->sp == s){
+      // if(n->next->procId == 3 && n->next->vpn == 0){
+
+      //   printf("\nremoved by prodId %d vpn %d\n\n", procId, vpn);
+      // }
       // if(n->next->procId == 2 && n->next->vpn == 4){
       //   // printf("________found_________\n");
       // }
       if(s == 0){
         panic("none should be matched");
       }
+      // printf("nxt pid: %d vpn : %d sp: %p s: %p\n", n->next->procId, n->next->vpn, n->next->sp, s);
+
       pte_t *pte = n->next->pte;
       // printf("cow flag1: %d\n", *pte & PTE_COW);
       *pte = (PTE_FLAGS(*pte)) | (PA2PTE((uint64)mem)) | (PTE_V);
       *pte &= (~PTE_SWAPPED);
       // printf("cow flag2: %d\n", *pte & PTE_COW);
 
+      int pid = n->next->procId;
+      int vp = n->next->vpn;
+      // printf("pte:v%d\n", *pte & PTE_V);
       struct swappedListNode *t = n->next->next;
       swappedListNodeFree(n->next);
       n->next = t;
-      addLive(pte, procId, vpn, 0);
       swapDecCount(s);
       if(swapGetCount(s) == 0){
         // release(&swapped.lock);
-        printf("swapfree en\n");
+        // printf("swapfree en\n");
       // releasesleep(&slock);
         swapfree(s);
       // acquiresleep(&slock);
-        printf("swapfree ex\n");
+        // printf("swapfree ex\n");
         // acquire(&swapped.lock);
       }
       ++rfc;
+      addLive(pte, pid, vp, 0);
     }
     else
       n = n->next;
@@ -461,11 +491,14 @@ void swapIn(int vpn, int procId, uint64 *pte){
   // release(&swapped.lock);
   acquire(&refCount.lock);
   int ppn = PA2PPN(mem);
+  if(refCount.count[ppn] != 1){
+    panic("ref count not 0");
+  }
   refCount.count[ppn] = rfc;
   release(&refCount.lock);
   releasesleep(&slock);
 
-  // printf("swapIn ex\n");
+  printf("swapIn ex\n");
 }
 
 void removeFromSwapped(int procId, int vpn, pte_t* pte){
@@ -478,24 +511,30 @@ void removeFromSwapped(int procId, int vpn, pte_t* pte){
   }
   int f = 0;
   while(s->next){
+    
     if(s->next->procId == procId && s->next->vpn == vpn && s->next->pte == pte){
+      if(s->next->procId == 3 && s->next->vpn == 0){
+        panic("removed");
+      }
+      
+      
       f = 1;
       t = s->next;
       s->next = t->next;
       swapDecCount(t->sp);
       if(swapGetCount(t->sp) == 0){
         // release(&swapped.lock);
-        printf("swapfree en\n");
+        // printf("swapfree en\n");
       // releasesleep(&slock);
         swapfree(t->sp);
       // acquiresleep(&slock);
-        printf("swapfree ex\n");
+        // printf("swapfree ex\n");
         // acquire(&swapped.lock);
       }
       swappedListNodeFree(t);
       break;
     }
-    // else if(s->next->procId == 4 && s->next->vpn == 9){
+    // else if(s->next->procId == 3 && s->next->vpn == 0){
     //   panic("e");
     // }
     else
@@ -536,8 +575,9 @@ void addLive(pte_t *pte, int procId, int vpn, int holdSleep){
   if(holdSleep)
     acquiresleep(&slock);
 
-  if(procId == 4 && vpn == 4){
-    printf("sdf");
+  if(procId == 3 && vpn == 0){
+    // panic("asd");
+    // printf("sdf");
   }
 
   // printf("add live en\n");
@@ -604,9 +644,9 @@ void removeLive(uint64* pte){
     
     // printf("p: %d vpn: %d\n", n->procId, n->vpn);
     if(n->next->pte == pte){
-      if(n->next->vpn == 9 && n->next->procId == 4){
-        panic("removed");
-      }
+      // if(n->next->vpn == 9 && n->next->procId == 4){
+      //   panic("removed");
+      // }
       struct liveListNode* t = n->next;
       n->next = n->next->next;
       liveListNodeFree(t);
@@ -644,7 +684,8 @@ int getLiveCount(){
   printf("===========live stats===========\n");
   n = live.list->next;
   while(n != 0){
-    // printf("n->procId : %d vpn: %d\n", n->procId, n->vpn);
+    if(debug)
+      printf("n->procId : %d vpn: %d ppn:%d\n", n->procId, n->vpn, PTE2PPN(*n->pte));
     n = n->next;
     ++c;
   }
@@ -811,3 +852,10 @@ int freePageCountFromRefCount(){
 // int getPPN(uint64 addr){
 //   return addr - KERNBASE;
 // }
+
+void acquireSlock(){
+  acquiresleep(&slock);
+}
+void releaseSlock(){
+  releaseSlock(&slock);
+}

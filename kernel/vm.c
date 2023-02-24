@@ -419,7 +419,8 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz,int oldProcId, int newProcId
       goto err;
     }
     uint64 ppn = PTE2PPN(*pte);
-    incRefCount(ppn);
+    if(!(flags & PTE_SWAPPED))
+      incRefCount(ppn);
   }
   return 0;
 
@@ -472,10 +473,10 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
       flags &= (~PTE_COW);
       char *mem = kalloc();
       memmove((void*) mem, (void*) pa0, PGSIZE);
+      removeLive(pte);
       decRefCount(PTE2PPN(*pte));
       // pa0 = (uint64) kalloc();
       pa0 = (uint64) mem;
-      removeLive(pte);
       *pte = PA2PTE(pa0) | flags;
       addLive(pte, procId, VA2VPN(va0), 1);
       // enqueue(pte);
@@ -573,6 +574,8 @@ int assignPagesOnWrite(pagetable_t p, int procId){
     swapListSize();
     if((flags & PTE_W) && (flags & PTE_SWAPPED)){
       swapIn(VA2VPN(va),procId, pte);
+      printf("now cow flag: %d\n", *pte & PTE_COW);
+      // panic("why are you here");
       return 1;
     }
     printf("pid: %d vpn: %d swappedbit: %d w:%d\n", procId, VA2VPN(va), (*pte) & PTE_SWAPPED, (*pte) & PTE_W);
@@ -613,7 +616,10 @@ int getSwappedPage(pagetable_t p, int procId){
   if(pte == 0) return 0;
   int vpn = VA2VPN(va);
   // uint64 flags = PTE_FLAGS(*pte);
-  // printf("swap flags: %d vpn: %d\n", (flags & PTE_SWAPPED), vpn);
+  // printf("swap flags: %d vpn: %d v:%d\n", (flags & PTE_SWAPPED), vpn, (flags & PTE_V));
+  // printf("looking for pid: %d vpn: %d\n", procId, vpn);
+  // getLiveCount();
+  // swapListSize();
   swapIn(vpn, procId, pte);
 
   return 1;

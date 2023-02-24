@@ -159,6 +159,8 @@ void swapDecCount(struct swap* s){
   s->refCount--;
   
   if(s->refCount < 0){
+    getLiveCount();
+    swapListSize();
     panic("swap ref count  0");
   }
 }
