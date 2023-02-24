@@ -230,27 +230,54 @@ int main(){
     // testSwapped();
     // testCowSwapped();
     // testFork2();
-    int a = 123123;
-    sbrk(100 * 4096);
-    // for(int i = 0; i < 100; ++i)
-    //     sbrk(4096);
-    // sbrk(100 * 4096);
+    int a = 1;
+
+    sbrk(50 * 4096);
     // pagestats();
-    // printf("==========================================\n");
+    printf("==========================================\n");
+    if(fork()){
+        sbrk(-50 * 4096);
+        // wait(0);
+        fork();
+        a = 55;
+        // wait(0);
+        sbrk(80 * 4096);
+        a = 23;
+    };
+    printf("a:%d\n", a);
+    // sbrk(60 * 4096);
+    // // for(int i = 0; i < 100; ++i)
+    // //     sbrk(4096);
+    // // sbrk(100 * 4096);
+    // // pagestats();
+    // // printf("==========================================\n");
+    // // if(fork()){
+    // //     // wait(0);
+    // //     fork();
+    // //     a = 55;
+    // //     // wait(0);
+    // //     sbrk(80 * 4096);
+    // //     a = 23;
+    // // };
+    // // if(fork() != 0){
+    // //     printf("fork parent\n");
+    // //     // wait(0);
+    // // }
     // if(fork()){
-    //     // wait(0);
-    //     fork();
-    //     a = 55;
-    //     // wait(0);
-    //     sbrk(80 * 4096);
-    //     a = 23;
-    // };
-    // if(fork() != 0){
-    //     printf("fork parent\n");
-    //     // wait(0);
+    //     wait(0);
+    //     a = 2;
+    //     printf("a: %d\n", a);
+    //     if(fork()){
+    //         wait(0);
+    //         int b = 4;
+    //         sbrk(55 * 4096);
+    //         b = 23;
+    //         a = 3;
+    //         printf("a: %d b: %d\n", a, b);
+    //     }
+        
     // }
-    // fork();
-    // fork();
+    
     // pagestats();
     printf("a:%d\n", a);
 

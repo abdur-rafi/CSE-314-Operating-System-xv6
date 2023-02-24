@@ -74,9 +74,11 @@ int             freePageCountFromRefCount();
 void            addLive(pte_t *pte, int procId, int vpn, int);
 int             getLiveCount();
 void            removePTE(pte_t *);
-void            removeLive(pte_t* );
+void            removeLive(int vpn, int procId, pte_t* );
 void            swapIn(int vpn, int procId, uint64 *pte);
 void            swapListSize();
+void            releaseSlock();
+void            acquireSlock();
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
@@ -134,6 +136,7 @@ void            swapIncCount(struct swap* s);
 void            swapDecCount(struct swap* s);
 int             swapGetCount(struct swap* s);
 void            removeFromSwapped(int procId, int vpn, pte_t*);
+
 
 
 // swtch.S
