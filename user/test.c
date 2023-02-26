@@ -9,6 +9,7 @@
 
 void pingpong();
 void cowtest(){
+    
     int c = 4;
     int pc; 
     int cc1, cc2;
@@ -319,23 +320,46 @@ void test3(){
     // };
     // printf("a:%d\n", a);
 
-void swapTest1(){
+void swapTestBasic(){
+    int n = 30;
+    char *pa = sbrk(n * PGSIZE);
+    for(int i = 0; i < n ; i++){
+        pa[i * PGSIZE] = i;
+    }
+    for(int i = 0; i < n ; i++){
+        if(pa[i * PGSIZE] != i){
+            printf("issue\n");
+        }
+    }
+    
+    // pagestats(1);
+}
+void swapTestFork(){
     int n = 60;
     int pgsize = 4096;
     char* pa = sbrk(n * pgsize);
-    fork();
-    for(int i = 0; i < n * pgsize; i+=pgsize){
-        pa[i] = i % 255;
+    for(int i = 0; i < n ; i++){
+        pa[i * PGSIZE] = i;
     }
-    for(int i = 0; i < n * pgsize; i+=pgsize){
-        printf("%d\n", pa[i]);
+
+    for(int i = 0; i < n; i++){
+        printf("%d\n", pa[i * PGSIZE]);
     }
-    pagestats(0);
     wait(0);
+    pagestats(0);
 }
 
-int main(){
-    cowtest();
+int main(int argc, char** argv){
+    // if(argc < 2){
+    //     printf("command line arguments needed\n");
+    //     exit(1);
+    // }
+    // if(strcmp("cow", argv[1]) == 0)
+    //     cowtest();
+    // else if(strcmp("paging", argv[1]) == 0){
+    //     pagestats(1);
+    // }
+    swapTestBasic();
     // swapTest1();
     // sbrk(60 * 4096);
     // test1();

@@ -10,7 +10,7 @@
 #include "defs.h"
 #include "sleeplock.h"
 
-#define MAX_LIVE_PAGE 50
+#define MAX_LIVE_PAGE 30
 
 void kfree2(void *pa);
 void removeLast();

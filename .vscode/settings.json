@@ -11,6 +11,7 @@
         "param.h": "c",
         "stat.h": "c",
         "riscv.h": "c",
-        "limits": "c"
+        "limits": "c",
+        "types.h": "c"
     }
 }

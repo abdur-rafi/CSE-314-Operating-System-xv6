@@ -135,6 +135,8 @@ UPROGS=\
 	$U/_zombie\
 	$U/_test\
 	$U/_cowtest\
+	$U/_usepage\
+	$U/_pagestats\
 
 
 
