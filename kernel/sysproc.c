@@ -90,12 +90,18 @@ sys_uptime(void)
   return xticks;
 }
 
-void sys_pagestats(void){
+void sys_pagestats(){
+  int a;
+  // int c = 0;
+  argint(0, &a);
   printf("===================== PAGESTATS ==================\n");
-  printf("free pages: %d\n",freePageCountFromFreeList());
-  printf("free pages from refCount: %d\n",freePageCountFromRefCount());
-  pageCountOfProcs();
-  getLiveCount();
-  swapListSize();
-  // printf("%d\n",getLiveCount());
+  if(!a){
+    printf("free pages: %d\n",freePageCountFromFreeList());
+    printf("free pages from refCount: %d\n",freePageCountFromRefCount());
+  }
+  else{
+    pageCountOfProcs();
+    getLiveCount();
+    swapListSize();
+  }
 }

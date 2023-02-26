@@ -11,11 +11,7 @@
 #include "sleeplock.h"
 
 #define MAX_LIVE_PAGE 50
-#define QUEUE_SIZE (MAX_LIVE_PAGE) * (NPROC)
 
-#define IN_QUEUE 1
-#define SWAPPED 2
-#define FREE 3
 void kfree2(void *pa);
 void removeLast();
 void swapListSize();

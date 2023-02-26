@@ -488,7 +488,9 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len, int procId)
 
     if((flags & PTE_SWAPPED)){
       printf("__________________________________");
-      panic("handle this\n");
+      // panic("handle this\n");
+      swapIn(VA2VPN(va0),procId,pte);
+      flags = PTE_FLAGS(*pte);
     }
     if((flags & PTE_COW)){
       uint64 flags = PTE_FLAGS(*pte);
@@ -602,7 +604,7 @@ int assignPagesOnWrite(pagetable_t p, int procId){
     // swapListSize();
     if((flags & PTE_W) && (flags & PTE_SWAPPED)){
       swapIn(VA2VPN(va),procId, pte);
-      printf("now cow flag: %d\n", *pte & PTE_COW);
+      // printf("now cow flag: %d\n", *pte & PTE_COW);
       releaseSlock();
       // panic("why are you here");
       return 1;
