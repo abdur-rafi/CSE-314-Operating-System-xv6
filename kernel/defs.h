@@ -206,7 +206,7 @@ int             copyout(pagetable_t, uint64, char *, uint64, int);
 int             copyin(pagetable_t, char *, uint64, uint64, int);
 int             copyinstr(pagetable_t, char *, uint64, uint64, int);
 int             assignPagesOnWrite(pagetable_t p, int);
-void            pageCount(pagetable_t, int, int*, int*, int *);
+void            pageCount(pagetable_t, int, int*, int*, int *, int *);
 int             getSwappedPage(pagetable_t p, int procId);
 void            addSwapped(pte_t *pte, int oldProcId, int newProcId, int vpn);
 void            swapListSize();

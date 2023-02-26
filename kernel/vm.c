@@ -196,8 +196,8 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int
         //   // releaseLock();
         // }
         // printf("procId : %d\n", procId);
-        
-        addLive(pte, procId, VA2VPN(a), 0);
+        if(!(*pte & PTE_X))
+          addLive(pte, procId, VA2VPN(a), 0);
         
         // if(procId > 1){
         //   acquireLock();
@@ -256,7 +256,8 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int procI
         removeFromSwapped(procId, VA2VPN(a), pte);
       }
       else{
-        removeLive(VA2VPN(a), procId, pte);
+        if(!(*pte & PTE_X))
+          removeLive(VA2VPN(a), procId, pte);
         kfree((void*)pa);
       }
       releaseSlock();
@@ -345,7 +346,7 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int procId)
   return newsz;
 }
 
-void pageCount(pagetable_t pagetable, int level, int* livePageCount, int* swappedPageCount, int *cowPageCount){
+void pageCount(pagetable_t pagetable, int level, int* livePageCount, int* swappedPageCount, int *cowPageCount, int *exCount){
   for(int i = 0; i < 512; i++){
     pte_t pte = pagetable[i];
     if(pte & PTE_V){
@@ -353,14 +354,18 @@ void pageCount(pagetable_t pagetable, int level, int* livePageCount, int* swappe
         *livePageCount += 1;
         if(pte & PTE_COW)
           *cowPageCount += 1;
+        else if(pte & PTE_X)
+          *exCount += 1;
       }
       else{
         uint64 child = PTE2PA(pte);
-        pageCount((pagetable_t)child, level + 1, livePageCount, swappedPageCount, cowPageCount);
+        pageCount((pagetable_t)child, level + 1, livePageCount, swappedPageCount, cowPageCount, exCount);
       }
     }
     else if(pte & PTE_SWAPPED){
       *swappedPageCount += 1;
+      if(pte & PTE_COW)
+        *cowPageCount += 1;
     }
   }
 }
@@ -648,24 +653,33 @@ int assignPagesOnWrite(pagetable_t p, int procId){
 }
 
 int getSwappedPage(pagetable_t p, int procId){
-  // printf("pid: %d\n", procId);
   uint64 va = r_stval();
   if(va >= MAXVA) return 0;
   pte_t *pte = walk(p,va,0,0);
-  if(pte == 0) return 0;
+  if(pte == 0){
+    printf("pte 0");
+    return 0;
+  }
+  // printf("pid: %d\n", procId);
+
   // uint64 flags = PTE_FLAGS(*pte);
   // printf("swap flags: %d vpn: %d v:%d\n", (flags & PTE_SWAPPED), vpn, (flags & PTE_V));
-  // printf("looking for pid: %d vpn: %d\n", procId, vpn);
   // getLiveCount();
   // swapListSize();
   acquireSlock();
+  int vpn = VA2VPN(va); 
+  // printf("looking for pid: %d vpn: %d\n", procId, vpn);
   if(*pte & PTE_V){
+
+    // getLiveCount();
+    // swapListSize();
     releaseSlock();
+    // printf("gs ex\n");
     return 1;
   }
-  int vpn = VA2VPN(va);
   swapIn(vpn, procId, pte);
   releaseSlock();
+  // printf("gs ex\n");
   return 1;
 }
 

@@ -703,9 +703,10 @@ void pageCountOfProcs(){
     int sp = 0;
     int l = 0;
     int cow = 0;
+    int ex = 0;
     if(p->state != UNUSED){
-      pageCount(p->pagetable, 0,&l, &sp, &cow);
-      printf("procId: %d livePage :%d swappedPage: %d cowPage: %d sz:%d\n", p->pid,l,sp,cow,(p->sz / PGSIZE + p->sz % PGSIZE));
+      pageCount(p->pagetable, 0,&l, &sp, &cow, &ex);
+      printf("procId: %d livePage :%d swappedPage: %d cowPage: %d executable page: %d sz:%d\n", p->pid,l,sp,cow, ex,(p->sz / PGSIZE + p->sz % PGSIZE));
       // Wake process from sleep().
     }
     release(&p->lock);
