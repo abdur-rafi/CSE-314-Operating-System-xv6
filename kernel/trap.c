@@ -70,14 +70,14 @@ usertrap(void)
   } else {
     int handled = 0;
     if(r_scause() == 0x0f){
-      printf("handling cow fault\n");
+      // printf("handling cow fault\n");
       handled = assignPagesOnWrite(p->pagetable, p->pid);
       if(!handled){
         printf("usertrap(): cow failed\n");
         setkilled(p);
       }
-      else 
-        printf("cow fault handled\n");
+      // else 
+      //   printf("cow fault handled\n");
         
     }
     else if(r_scause() == 0x0c || r_scause() == 0x0d){

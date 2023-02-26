@@ -345,16 +345,18 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int procId)
   return newsz;
 }
 
-void pageCount(pagetable_t pagetable, int level, int* livePageCount, int* swappedPageCount){
+void pageCount(pagetable_t pagetable, int level, int* livePageCount, int* swappedPageCount, int *cowPageCount){
   for(int i = 0; i < 512; i++){
     pte_t pte = pagetable[i];
     if(pte & PTE_V){
       if(level == 2){
         *livePageCount += 1;
+        if(pte & PTE_COW)
+          *cowPageCount += 1;
       }
       else{
         uint64 child = PTE2PA(pte);
-        pageCount((pagetable_t)child, level + 1, livePageCount, swappedPageCount);
+        pageCount((pagetable_t)child, level + 1, livePageCount, swappedPageCount, cowPageCount);
       }
     }
     else if(pte & PTE_SWAPPED){
