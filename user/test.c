@@ -130,7 +130,7 @@ void pingpong()
 }
 
 void swapTestBasic(){
-    int n = 20;
+    int n = 55;
     char *pa = sbrk(n * PGSIZE);
     for(int i = 0; i < n ; i++){
         pa[i * PGSIZE] = i;
@@ -143,7 +143,7 @@ void swapTestBasic(){
     pagestats(1);
 }
 void swapTestFork(){
-    int n = 30;
+    int n = 55;
     int pgsize = 4096;
     char* pa = sbrk(n * pgsize);
     pagestats(1);
@@ -157,7 +157,7 @@ void swapTestFork(){
         }
     }
     wait(0);
-    
+
     if(r) exit(0);
 
     if(fork() == 0){
@@ -173,9 +173,6 @@ void swapTestFork(){
     }
     else{
         wait(0);
-    }
-    if(r != 0){
-        wait(0);
         for(int i = 0; i < n; i++){
             if(pa[i * PGSIZE] != i){
                 printf("issue with block: %d\n", i);
@@ -183,6 +180,7 @@ void swapTestFork(){
         }
         pagestats(1);
     }
+        
 }
 
 int main(int argc, char** argv){
